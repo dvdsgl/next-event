@@ -32,12 +32,6 @@ Item {
     width: parent.width
     spacing: Style.space(4)
 
-    PanelSeparator {
-      visible: root.showSeparator
-      foreground: root.contentForeground
-      strength: Tokens.separatorGroup
-    }
-
     PanelSectionHeader {
       text: root.group ? root.group.title : ""
       foreground: root.contentForeground

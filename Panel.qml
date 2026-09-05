@@ -329,12 +329,6 @@ Panel {
             }
           }
 
-          PanelSeparator {
-            visible: root.activeTab === "next" && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
-            foreground: root.contentForeground
-            strength: Tokens.separatorLegend
-          }
-
           CalendarLegend {
             visible: root.activeTab === "next" && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
             legend: root.calendarLegend
