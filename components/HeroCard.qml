@@ -16,6 +16,8 @@ Item {
   property string contentFontFamily: Style.font.family
   property bool cursorOnJoin: false
   property bool cursorOnCalendar: false
+  property bool embedded: false
+  property bool showActions: true
 
   signal joinRequested()
   signal calendarRequested()
@@ -33,12 +35,12 @@ Item {
     id: heroBlock
     width: parent.width
     radius: Style.cornerRadius
-    color: root.inMeeting
+    color: root.embedded ? "transparent" : (root.inMeeting
       ? Style.selectedFillFor(root.contentForeground, Color.accent)
-      : Style.normalFillFor(root.contentForeground, Color.accent)
-    borderSpec: root.inMeeting
+      : Style.normalFillFor(root.contentForeground, Color.accent))
+    borderSpec: root.embedded ? Border.none() : (root.inMeeting
       ? Border.controlSpec("selected", root.contentForeground, Color.accent)
-      : Border.none()
+      : Border.none())
     implicitHeight: heroCol.implicitHeight + Style.space(20)
 
     Rectangle {
@@ -112,6 +114,7 @@ Item {
       }
 
       RowLayout {
+        visible: root.showActions
         width: parent.width
         spacing: Style.space(8)
 

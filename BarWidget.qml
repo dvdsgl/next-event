@@ -4,6 +4,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Model.js" as Model
+import "components"
 
 // NextEvent — the next event, right in the bar.
 //
@@ -21,6 +22,7 @@ BarWidget {
   // (comma-separated), or a JSON array of strings / { url, label } objects.
   readonly property var icsFeeds: Model.splitIcsFeeds(setting("icsUrl", ""))
   readonly property string eventsJsonPath: String(setting("eventsJsonPath", (Quickshell.env("HOME") || "") + "/.local/state/omarchy/calendar-events.json") || "").trim()
+  readonly property string icsCachePath: (Quickshell.env("HOME") || "") + "/.local/state/omarchy/next-event-cache.json"
   readonly property string sourceMode: String(setting("sourceMode", icsFeeds.length > 0 ? Model.SOURCE_MODE_ICS : Model.SOURCE_MODE_JSON) || "").trim()
   readonly property int refreshMinutes: Math.max(1, parseInt(setting("refreshMinutes", Model.DEFAULT_REFRESH_MINUTES), 10) || Model.DEFAULT_REFRESH_MINUTES)
   readonly property int showDaysAhead: Math.max(1, parseInt(setting("showDaysAhead", Model.DEFAULT_LOOKAHEAD_DAYS), 10) || Model.DEFAULT_LOOKAHEAD_DAYS)
@@ -30,8 +32,10 @@ BarWidget {
   readonly property int maxFeedSizeMiB: Math.max(1, parseInt(setting("maxFeedSizeMiB", Model.DEFAULT_MAX_FEED_SIZE_MIB), 10) || Model.DEFAULT_MAX_FEED_SIZE_MIB)
   readonly property bool showOnlyWithVideoLink: Model.toBoolean(setting("showOnlyWithVideoLink", false), false)
   readonly property bool showCalendarLabel: Model.toBoolean(setting("showCalendarLabel", true), true)
+  readonly property bool showCalendarIcon: Model.toBoolean(setting("showCalendarIcon", true), true)
   readonly property bool useCalendarColors: Model.toBoolean(setting("useCalendarColors", true), true)
   readonly property bool colorOnBar: Model.toBoolean(setting("colorOnBar", false), false)
+  readonly property bool urgentDuringMeeting: Model.toBoolean(setting("urgentDuringMeeting", false), false)
   readonly property string browserCommand: String(setting("browserCommand", "") || "").trim()
   // Base for "Open in Calendar". Defaults to the signed-in account; set to
   // e.g. "https://calendar.google.com/calendar/u/2" to open a specific
@@ -52,9 +56,11 @@ BarWidget {
 
   // ---- state
   property bool jsonLoaded: false
+  property bool icsLiveFetchSucceeded: false
   readonly property bool configured: (sourceMode === Model.SOURCE_MODE_ICS ? icsFeeds.length > 0 : jsonLoaded) || (rawEvents && rawEvents.length > 0)
   onSourceModeChanged: {
     jsonLoaded = false
+    icsLiveFetchSucceeded = false
     fetchCalendar()
   }
   property var rawEvents: []
@@ -80,7 +86,7 @@ BarWidget {
   property string currentFeedColor: ""
   property string feedOutput: ""
 
-  readonly property string label: Model.barLabel(root.configured, root.nextMeeting, root.now, root.maxTitleLength, root.use12Hour)
+  readonly property string label: Model.barLabel(root.configured, root.nextMeeting, root.now, root.maxTitleLength, root.use12Hour, root.showCalendarIcon)
   readonly property bool inMeeting: nextMeeting
     && !nextMeeting.allDay
     && nextMeeting.start && nextMeeting.end
@@ -210,15 +216,37 @@ BarWidget {
     var events = Model.dedupeEvents(allEvents)
 
     if (events.length === 0 && root.offlineFeedCount > 0 && root.feedChunks.length === 0) {
-      // Every feed failed: no data at all.
-      root.rawEvents = []
+      // Every feed failed: keep any cached snapshot on screen.
       root.lastFetchFailed = true
       root.meetingDataChanged()
       return
     }
 
     root.lastFetchFailed = false
+    root.icsLiveFetchSucceeded = true
     root.applyScheduleState(events, new Date())
+    root.writeIcsCache()
+  }
+
+  function onIcsCacheLoaded(raw) {
+    if (root.sourceMode !== Model.SOURCE_MODE_ICS) return
+    if (root.icsFeeds.length === 0) return
+    if (root.icsLiveFetchSucceeded) return
+    var text = String(raw || "").trim()
+    if (!text) return
+    var parsed = Model.parseJsonState(text, {
+      lookaheadDays: root.showDaysAhead + 1,
+      now: root.now
+    })
+    if (!parsed.events || parsed.events.length === 0) return
+    var cachedAt = parsed.syncedAt ? new Date(parsed.syncedAt) : null
+    if (cachedAt && isNaN(cachedAt.getTime())) cachedAt = null
+    root.applyScheduleState(parsed.events, cachedAt)
+  }
+
+  function writeIcsCache() {
+    if (root.sourceMode !== Model.SOURCE_MODE_ICS) return
+    icsCacheFile.setText(Model.serializeIcsCache(root.rawEvents, root.lastUpdated))
   }
 
   function onJsonData(raw) {
@@ -320,6 +348,15 @@ BarWidget {
     onFileChanged: reload()
   }
 
+  FileView {
+    id: icsCacheFile
+    path: root.sourceMode === Model.SOURCE_MODE_ICS ? root.icsCachePath : ""
+    watchChanges: false
+    atomicWrites: true
+    printErrors: false
+    onLoaded: root.onIcsCacheLoaded(text())
+  }
+
   Process {
     id: syncProc
     command: [Qt.resolvedUrl("sync/next-event-sync").toString().replace("file://", "")]
@@ -374,10 +411,10 @@ BarWidget {
     hasVisualContent: true
     dimmed: root.label === ""
     active: root.inMeeting
-    useActiveColor: !(root.useCalendarColors && root.colorOnBar)
+    useActiveColor: root.urgentDuringMeeting && !(root.useCalendarColors && root.colorOnBar)
     horizontalMargin: 8.75
     verticalPadding: 8.75
-    tooltipText: root.tooltipLine
+    tooltipText: root.nextMeeting ? "" : root.tooltipLine
 
     onPressed: function(b) {
       if (b === Qt.RightButton) {
@@ -397,4 +434,63 @@ BarWidget {
     showCalendarLabel: root.showCalendarLabel,
     use12Hour: root.use12Hour
   })
+
+  property bool nextTooltipShown: false
+
+  Timer {
+    id: nextTooltipShowDelay
+    interval: 400
+    onTriggered: root.nextTooltipShown = true
+  }
+
+  Timer {
+    id: nextTooltipHideDelay
+    interval: 180
+    onTriggered: root.nextTooltipShown = false
+  }
+
+  readonly property bool nextTooltipWanted: !!(root.nextMeeting && root.bar && !(panelLoader.item && panelLoader.item.opened)
+    && (button.tooltipHovered || nextTooltip.containsMouse))
+
+  onNextTooltipWantedChanged: {
+    if (root.nextTooltipWanted) {
+      nextTooltipHideDelay.stop()
+      nextTooltipShowDelay.restart()
+    } else {
+      nextTooltipShowDelay.stop()
+      nextTooltipHideDelay.restart()
+    }
+  }
+
+  PopupCard {
+    id: nextTooltip
+    anchorItem: button
+    bar: root.bar
+    owner: root
+    triggerMode: "hover"
+    open: root.nextTooltipShown && root.nextTooltipWanted
+    contentWidth: nextTooltip.fittedContentWidth(Style.space(320))
+    contentHeight: nextTooltip.fittedContentHeight(tooltipHero.implicitHeight)
+
+    HeroCard {
+      id: tooltipHero
+      width: parent ? parent.width : Style.space(320)
+      embedded: true
+      next: root.nextMeeting
+      now: root.now
+      inMeeting: root.inMeeting
+      useCalendarColors: root.useCalendarColors
+      use12Hour: root.use12Hour
+      contentForeground: root.bar ? root.bar.barForeground : Color.foreground
+      contentFontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+      onJoinRequested: {
+        root.nextTooltipShown = false
+        root.joinMeeting(root.nextMeeting)
+      }
+      onCalendarRequested: {
+        root.nextTooltipShown = false
+        root.openCalendar(root.nextMeeting)
+      }
+    }
+  }
 }

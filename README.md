@@ -60,13 +60,14 @@ upcoming event from your calendar with live countdowns and lets you join video c
 
 - **Google Workspace OAuth & Universal Calendar Support**: Connect corporate Google Workspace accounts via guided OAuth setup, or use standard `.ics` feeds from Google Calendar, Microsoft Outlook, Apple iCloud, Nextcloud, Proton, and custom URLs
 - **Multiple Calendars**: Combine several `.ics` feeds (e.g. work + personal) into one widget. Give each feed a `label|` name so events carry a small tag, shared events are deduplicated, and one offline calendar doesn't hide the rest
-- **Bar Widget**: Shows the next event with live countdown (`Daily in 15 min`, `Daily · 15 min left`, `Daily · 14:00`, `Daily · Tmrw 14:00`, `Daily · Wed 14:00`). Set `timeFormat` to `12` for AM/PM times
+- **Bar Widget**: Shows the next event with live countdown (`Daily in 15 min`, `Daily · 15m left`, `Daily · 14:00`, `Daily · Tmrw 14:00`, `Daily · Wed 14:00`). Set `timeFormat` to `12` for AM/PM times
 - **Quick Join & Settings**: Click to open the agenda panel; single click on "Join Meeting" opens the video link (Google Meet, Zoom, Teams, Webex, GoToMeeting) in your default browser; click the Settings button next to Refresh (or press `,`) to customize all options directly in the UI
 - **Instant Actions**: Right-click on the bar widget to join the next meeting immediately; middle-click to force-refresh
 - **Keyboard Navigation**: With the agenda panel open, `↑`/`↓` (or `j`/`k`) move through the refresh and settings buttons, hero actions, and event rows, `Enter`/`Space` activates, `r` refreshes, `,` toggles settings, `m` joins the next meeting, `o` opens it in the calendar, `Tab`/`Shift+Tab` switch panels, `Escape` closes — all scoped to the focused panel so no Omarchy keybinding is ever shadowed
 - **Summon Keybinding**: Bind a global key to open the agenda panel (see [Opening the panel from the keyboard](#opening-the-panel-from-the-keyboard))
 - **Repeating Events**: Automatically expands repeating events (daily standups, weekly meetings) and respects cancelled or rescheduled instances
 - **Live Updates**: Automatic background sync every few minutes, with a 30-second reactive countdown timer
+- **Instant start**: ICS events reappear immediately from a local cache while calendars refresh in the background
 
 ## Install
 
@@ -170,8 +171,10 @@ Configure settings with `omarchy bar set tobiasz-p.next-event <key> <value>`:
 | `maxFeedSizeMiB`      | `10`    | Maximum size of each downloaded calendar feed (MiB) |
 | `showOnlyWithVideoLink` | `false` | Only show meetings in the bar countdown that have a video link |
 | `showCalendarLabel`   | `true`  | Include calendar name in the bar widget tooltip      |
+| `showCalendarIcon`    | `true`  | Prefix the bar label with a calendar or video icon   |
 | `useCalendarColors`   | `true`  | Tint event indicators and badges in the panel using calendar-specific colors |
 | `colorOnBar`          | `false` | Also tint the bar widget text using the next meeting's calendar color (requires `useCalendarColors` to be `true`) |
+| `urgentDuringMeeting` | `false` | Tint the bar widget text with the theme's urgent/active color while a meeting is in progress |
 | `browserCommand`      | `""`    | Command used to open the Meet URL (`xdg-open` by default) |
 | `calendarUrlBase`     | `"https://calendar.google.com/calendar"` | Base URL for "Open in Calendar" (opens `/r` route; set e.g. `https://calendar.google.com/calendar/u/1` for multi-account) |
 | `keyRefresh`          | `r`     | Panel key that force-refreshes the feeds            |
@@ -213,7 +216,7 @@ browser; refreshing keeps it open.
 
 ## Privacy
 
-Calendar data is fetched directly by your machine. No external intermediate service, no 3rd-party servers, no telemetry.
+Calendar data is fetched directly by your machine. No external intermediate service, no 3rd-party servers, no telemetry. ICS snapshots are cached locally at `~/.local/state/omarchy/next-event-cache.json` (event details only — feed URLs are never written).
 
 ## Contributing
 
