@@ -35,12 +35,8 @@ Item {
     id: heroBlock
     width: parent.width
     radius: Style.cornerRadius
-    color: root.embedded ? "transparent" : (root.inMeeting
-      ? Style.selectedFillFor(root.contentForeground, Color.accent)
-      : Style.normalFillFor(root.contentForeground, Color.accent))
-    borderSpec: root.embedded ? Border.none() : (root.inMeeting
-      ? Border.controlSpec("selected", root.contentForeground, Color.accent)
-      : Border.none())
+    color: "transparent"
+    borderSpec: Border.none()
     implicitHeight: heroCol.implicitHeight + Style.space(20)
 
     Rectangle {
