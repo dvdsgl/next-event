@@ -329,17 +329,9 @@ Panel {
             }
           }
 
-          CalendarLegend {
-            visible: root.activeTab === "next" && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
-            legend: root.calendarLegend
-            contentForeground: root.contentForeground
-            contentFontFamily: root.contentFontFamily
-            useCalendarColors: root.useCalendarColors
-          }
-
           Text {
             id: statusFooter
-            visible: text !== ""
+            visible: root.lastFetchFailed || root.offlineFeedCount > 0
             width: parent.width
             textFormat: Text.PlainText
             text: Model.headerStatus(
@@ -351,9 +343,7 @@ Panel {
               root.hostWidget && root.hostWidget.configured,
               root.hostWidget ? root.hostWidget.use12Hour : false
             )
-            color: (root.lastFetchFailed || root.offlineFeedCount > 0)
-              ? Color.urgent
-              : Qt.darker(root.contentForeground, Tokens.dimMuted)
+            color: Color.urgent
             font.family: root.contentFontFamily
             font.pixelSize: Style.font.caption
             horizontalAlignment: Text.AlignHCenter
