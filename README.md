@@ -1,6 +1,6 @@
 # NextEvent
 
-[![CI](https://github.com/tobiasz-p/next-event/actions/workflows/ci.yml/badge.svg)](https://github.com/tobiasz-p/next-event/actions/workflows/ci.yml)
+[![CI](https://github.com/dvdsgl/next-event/actions/workflows/ci.yml/badge.svg)](https://github.com/dvdsgl/next-event/actions/workflows/ci.yml)
 [![Omarchy Marketplace](https://img.shields.io/badge/Marketplace-tobiasz--p.next--event-7c3aed)](https://omarchyplugins.com/plugin.html?id=tobiasz-p.next-event)
 [![Omarchy](https://img.shields.io/badge/Omarchy-Platform-1793d1)](https://omarchy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -9,6 +9,11 @@
 
 Next event, right in the bar — native to your Omarchy shell. Shows the next
 upcoming event from your calendar with live countdowns and lets you join video calls (Google Meet, Zoom, Teams, Webex, GoToMeeting) with a single click.
+
+This is **[David Siegel](https://github.com/dvdsgl)’s fork** of
+[tobiasz-p/next-event](https://github.com/tobiasz-p/next-event). The work here
+is mostly a UI redesign: tabbed Next / Calendars / Options, a quieter bar
+label, and a few calendar-sync fixes on top of the original plugin.
 
 ## Contents
 
@@ -72,7 +77,7 @@ upcoming event from your calendar with live countdowns and lets you join video c
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/tobiasz-p/next-event.git --enable
+omarchy plugin add https://github.com/dvdsgl/next-event.git --enable
 ```
 
 Or manually: copy this folder into `~/.config/omarchy/plugins/tobiasz-p.next-event` and run
@@ -229,9 +234,9 @@ External contributors need to fork the repository first (as only maintainers hav
 1. **Fork the repository** on GitHub to your personal account.
 2. **Clone your fork** and add the upstream repository as a remote:
    ```sh
-   git clone https://github.com/<your-username>/next-event.git
-   cd next-event
-   git remote add upstream https://github.com/tobiasz-p/next-event.git
+    git clone https://github.com/<your-username>/next-event.git
+    cd next-event
+    git remote add upstream https://github.com/dvdsgl/next-event.git
    ```
 3. **Create a feature branch**:
    ```sh
