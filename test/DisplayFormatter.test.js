@@ -41,10 +41,10 @@ describe("DisplayFormatter", () => {
     })
 
     it("formats midnight, noon, and afternoon correctly in 12-hour mode", () => {
-      assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 0, 0, 0), true), "12:00 AM")
+      assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 0, 0, 0), true), "12AM")
       assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 0, 5, 0), true), "12:05 AM")
       assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 9, 5, 0), true), "9:05 AM")
-      assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 12, 0, 0), true), "12:00 PM")
+      assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 12, 0, 0), true), "12PM")
       assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 12, 5, 0), true), "12:05 PM")
       assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 13, 5, 0), true), "1:05 PM")
       assert.strictEqual(DisplayFormatter.hm(new Date(2026, 7, 28, 23, 59, 0), true), "11:59 PM")
@@ -64,7 +64,7 @@ describe("DisplayFormatter", () => {
       )
       assert.strictEqual(
         DisplayFormatter.timeRange(timedEvent.start, timedEvent.end, false, true),
-        "10:00 AM–11:00 AM"
+        "10AM–11AM"
       )
       assert.strictEqual(
         DisplayFormatter.timeRange(
@@ -73,7 +73,7 @@ describe("DisplayFormatter", () => {
           false,
           true
         ),
-        "1:00 PM–2:30 PM"
+        "1PM–2:30 PM"
       )
       assert.strictEqual(
         DisplayFormatter.timeRange(allDayToday.start, allDayToday.end, true),
@@ -95,7 +95,7 @@ describe("DisplayFormatter", () => {
       )
       assert.strictEqual(
         DisplayFormatter.meetingTimeLabel(timedEvent.start, timedEvent.end, now, false, true),
-        "Today · 10:00 AM–11:00 AM"
+        "Today · 10AM–11AM"
       )
       assert.strictEqual(
         DisplayFormatter.meetingTimeLabel(allDayToday.start, allDayToday.end, now, true, true),
@@ -109,7 +109,7 @@ describe("DisplayFormatter", () => {
       assert.strictEqual(DisplayFormatter.relativeStatus(timedEvent, now, false), "starts at 10:00")
       assert.strictEqual(
         DisplayFormatter.relativeStatus(timedEvent, now, true),
-        "starts at 10:00 AM"
+        "starts at 10AM"
       )
 
       const afternoonEvent = new CalendarEvent({
@@ -122,7 +122,7 @@ describe("DisplayFormatter", () => {
       )
       assert.strictEqual(
         DisplayFormatter.relativeStatus(afternoonEvent, now, true),
-        "starts at 2:00 PM"
+        "starts at 2PM"
       )
 
       const in5MinEvent = new CalendarEvent({
@@ -143,7 +143,7 @@ describe("DisplayFormatter", () => {
     it("formats upcoming timed event with relative minutes", () => {
       assert.strictEqual(
         DisplayFormatter.formatLabel(timedEvent, now, 30),
-        "Sprint Review · in 60 min"
+        "Sprint Review in 60 min"
       )
     })
 
@@ -153,7 +153,7 @@ describe("DisplayFormatter", () => {
         start: new Date(2026, 7, 28, 8, 30, 0),
         end: new Date(2026, 7, 28, 9, 21, 0)
       })
-      assert.strictEqual(DisplayFormatter.formatLabel(happeningNow, now, 30), "Standup · 21m left")
+      assert.strictEqual(DisplayFormatter.formatLabel(happeningNow, now, 30), "Standup 21m left")
     })
 
     it("formats future timed event with 24-hour and 12-hour formats", () => {
@@ -164,11 +164,11 @@ describe("DisplayFormatter", () => {
       })
       assert.strictEqual(
         DisplayFormatter.formatLabel(laterToday, now, 40, false),
-        "Architecture Sync · 14:30"
+        "Architecture Sync 14:30"
       )
       assert.strictEqual(
         DisplayFormatter.formatLabel(laterToday, now, 40, true),
-        "Architecture Sync · 2:30 PM"
+        "Architecture Sync 2:30 PM"
       )
 
       const tomorrowMeeting = new CalendarEvent({
@@ -178,22 +178,22 @@ describe("DisplayFormatter", () => {
       })
       assert.strictEqual(
         DisplayFormatter.formatLabel(tomorrowMeeting, now, 40, false),
-        "Design Review · Tmrw 13:00"
+        "Design Review Tmrw 13:00"
       )
       assert.strictEqual(
         DisplayFormatter.formatLabel(tomorrowMeeting, now, 40, true),
-        "Design Review · Tmrw 1:00 PM"
+        "Design Review Tmrw 1PM"
       )
     })
 
     it("formats today's all-day event", () => {
-      assert.strictEqual(DisplayFormatter.formatLabel(allDayToday, now, 30), "Hackathon · All day")
+      assert.strictEqual(DisplayFormatter.formatLabel(allDayToday, now, 30), "Hackathon All day")
     })
 
     it("formats tomorrow's all-day event", () => {
       assert.strictEqual(
         DisplayFormatter.formatLabel(allDayTmrw, now, 30),
-        "Offsite · Tmrw All day"
+        "Offsite Tmrw All day"
       )
     })
 
@@ -213,7 +213,7 @@ describe("DisplayFormatter", () => {
     it("returns formatted icon and title when configured in 24h and 12h", () => {
       assert.strictEqual(
         DisplayFormatter.barLabel(true, timedEvent, now, 30, false),
-        "  Sprint Review · in 60 min"
+        "  Sprint Review in 60 min"
       )
       const laterEvent = new CalendarEvent({
         title: "Sprint Review",
@@ -223,7 +223,7 @@ describe("DisplayFormatter", () => {
       })
       assert.strictEqual(
         DisplayFormatter.barLabel(true, laterEvent, now, 30, true),
-        "  Sprint Review · 2:00 PM"
+        "  Sprint Review 2PM"
       )
     })
 
@@ -235,7 +235,7 @@ describe("DisplayFormatter", () => {
     it("omits the calendar icon when showCalendarIcon is false", () => {
       assert.strictEqual(
         DisplayFormatter.barLabel(true, timedEvent, now, 30, false, false),
-        "Sprint Review · in 60 min"
+        "Sprint Review in 60 min"
       )
     })
   })
@@ -299,7 +299,7 @@ describe("DisplayFormatter", () => {
         showCalendarLabel: true,
         use12Hour: true
       })
-      assert.strictEqual(tooltip12, "Work · Sprint Review · 10:00 AM–11:00 AM (starts at 10:00 AM)")
+      assert.strictEqual(tooltip12, "Work · Sprint Review · 10AM–11AM (starts at 10AM)")
     })
 
     it("returns setup message when unconfigured", () => {
@@ -355,7 +355,7 @@ describe("DisplayFormatter", () => {
       )
       assert.strictEqual(
         DisplayFormatter.heroTimeStatus(timedEvent, now, true),
-        "Today · 10:00 AM–11:00 AM · starts at 10:00 AM"
+        "Today · 10AM–11AM · starts at 10AM"
       )
     })
   })

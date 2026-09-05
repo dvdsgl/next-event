@@ -54,15 +54,6 @@ Item {
           font.bold: root.activeTab === modelData.id
         }
 
-        Rectangle {
-          visible: root.activeTab === modelData.id
-          anchors.left: parent.left
-          anchors.right: parent.right
-          anchors.bottom: parent.bottom
-          height: Style.space(2)
-          color: Color.accent
-        }
-
         MouseArea {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
@@ -94,6 +85,9 @@ Item {
       horizontalAlignment: Text.AlignHCenter
       verticalAlignment: Text.AlignVCenter
       transformOrigin: Item.Center
+      opacity: root.fetching ? Tokens.fetchingOpacity : 1.0
+
+      Behavior on opacity { NumberAnimation { duration: 160 } }
 
       RotationAnimation on rotation {
         from: 0

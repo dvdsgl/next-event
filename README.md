@@ -168,7 +168,7 @@ Configure settings with `omarchy bar set tobiasz-p.next-event <key> <value>`:
 | `showDaysAhead`       | `3`     | How many days ahead to list meetings                |
 | `maxTitleLength`      | `28`    | Bar label truncation length                         |
 | `timeFormat`          | `24`    | Time display format: `24` (24-hour) or `12` (AM/PM) |
-| `maxFeedSizeMiB`      | `10`    | Maximum size of each downloaded calendar feed (MiB) |
+| `maxFeedSizeMiB`      | `32`    | Maximum size of each downloaded calendar feed (MiB) |
 | `showOnlyWithVideoLink` | `false` | Only show meetings in the bar countdown that have a video link |
 | `showCalendarLabel`   | `true`  | Include calendar name in the bar widget tooltip      |
 | `showCalendarIcon`    | `true`  | Prefix the bar label with a calendar or video icon   |

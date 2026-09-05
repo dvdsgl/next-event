@@ -18,8 +18,8 @@ var DEFAULT_LOOKAHEAD_DAYS = 3
 var DEFAULT_MAX_TITLE_LENGTH = 28
 var MIN_MAX_TITLE_LENGTH = 8
 var MIN_TITLE_CHARS = 3
-var DEFAULT_MAX_FEED_SIZE_MIB = 10
-var FETCH_TIMEOUT_SECONDS = 15
+var DEFAULT_MAX_FEED_SIZE_MIB = 32
+var FETCH_TIMEOUT_SECONDS = 60
 var BYTES_PER_MIB = 1048576
 
 var DEFAULT_MAX_EVENTS = 80
@@ -71,7 +71,7 @@ var TOOLTIP_BACK_SCHEDULE = "Back to schedule"
 var TOOLTIP_BACK_SETTINGS = "Back to settings"
 var TOOLTIP_UPDATING = "Updating calendar…"
 
-var ICON_REFRESH = ""
+var ICON_REFRESH = "󰑐"
 var ICON_SETTINGS = "󰒓"
 var ICON_MEETING_VIDEO = ""
 var ICON_CALENDAR_EVENT = "󰃯"
@@ -1139,7 +1139,8 @@ class IcsParser {
       cancelled: false,
       declined: false,
       transparent: false,
-      attendeeDeclined: false
+      attendeeDeclined: false,
+      attendees: []
     }
     var lines = block.lines
     var lastTzid = null
@@ -1159,6 +1160,11 @@ class IcsParser {
         event.transparent = String(propValue || "").trim().toUpperCase() === "TRANSPARENT"
       } else if (propName === "ATTENDEE") {
         var partstat = String(prop.params.PARTSTAT || "").trim().toUpperCase()
+        var email = String(propValue || "")
+          .replace(/^mailto:/i, "")
+          .trim()
+          .toLowerCase()
+        event.attendees.push({ partstat: partstat, email: email })
         if (partstat === "DECLINED") event.attendeeDeclined = true
       }
       else if (propName === "RECURRENCE-ID") {
@@ -1230,7 +1236,6 @@ class IcsParser {
 
     if (!event.uid || !event.start) return null
     if (event.cancelled || event.declined) return null
-    if (event.attendeeDeclined && event.transparent) return null
 
     var linkCandidate =
       (event.location || "") +
@@ -1265,6 +1270,33 @@ class IcsParser {
       }
     }
     return event
+  }
+
+  static calendarEmailFromIcsUrl(url) {
+    var match = /\/ical\/([^/]+)\//i.exec(String(url || ""))
+    if (!match) return ""
+    var decoded = match[1]
+    try {
+      decoded = decodeURIComponent(match[1])
+    } catch (_) {}
+    if (decoded.indexOf("@") < 0) return ""
+    return decoded.toLowerCase()
+  }
+
+  static isDeclinedForSelf(event, selfEmail) {
+    if (!event) return false
+    if (event.cancelled || event.declined) return true
+    var self = String(selfEmail || "")
+      .trim()
+      .toLowerCase()
+    if (self) {
+      var attendees = event.attendees || []
+      for (var i = 0; i < attendees.length; i++) {
+        if (attendees[i].email === self && attendees[i].partstat === "DECLINED") return true
+      }
+      return false
+    }
+    return event.attendeeDeclined === true && event.transparent === true
   }
 
   static parse(raw, options) {
@@ -1353,6 +1385,7 @@ class IcsParser {
         if (exdateSet[startMs]) continue
         var overrideEvent = overridesByTime[startMs] || null
         var source = overrideEvent || master
+        if (IcsParser.isDeclinedForSelf(source, options.selfEmail)) continue
         var startDate = overrideEvent ? overrideEvent.start : occStart
         var endDate = overrideEvent ? overrideEvent.end : new Date(startMs + master.durationMs)
         if (endDate.getTime() <= startDate.getTime())
@@ -1877,6 +1910,28 @@ class ScheduleAggregator {
     return groups
   }
 
+  static isSameOccurrence(a, b) {
+    if (!a || !b || !a.start || !b.start) return false
+    if (a.uid && b.uid) return a.uid === b.uid && a.start.getTime() === b.start.getTime()
+    return a.start.getTime() === b.start.getTime() && a.title === b.title
+  }
+
+  static omitFeaturedEvent(groups, featured) {
+    if (!featured || !groups || !groups.length) return groups || []
+    var result = []
+    for (var i = 0; i < groups.length; i++) {
+      var group = groups[i]
+      var items = []
+      var source = group.items || []
+      for (var j = 0; j < source.length; j++) {
+        if (!ScheduleAggregator.isSameOccurrence(source[j], featured)) items.push(source[j])
+      }
+      if (items.length === 0) continue
+      result.push({ key: group.key, title: group.title, items: items })
+    }
+    return result
+  }
+
   static buildCalendarLegend(events, feeds) {
     var seen = {}
     var legend = []
@@ -1926,12 +1981,14 @@ class ScheduleAggregator {
     })
 
     var calendarLegend = ScheduleAggregator.buildCalendarLegend(events, options.feeds)
+    var nextMeeting = meetings.length > 0 ? meetings[0] : null
+    var listedGroups = ScheduleAggregator.omitFeaturedEvent(scheduleGroups, nextMeeting)
 
     return {
       meetings: meetings,
       upcomingToday: upcomingTodayList,
-      scheduleGroups: scheduleGroups,
-      nextMeeting: meetings.length > 0 ? meetings[0] : null,
+      scheduleGroups: listedGroups,
+      nextMeeting: nextMeeting,
       calendarLegend: calendarLegend
     }
   }
@@ -1953,7 +2010,9 @@ class DisplayFormatter {
       var suffix = hour >= 12 ? "PM" : "AM"
       var displayHour = hour % 12
       if (displayHour === 0) displayHour = 12
-      return displayHour + ":" + DateTimeUtils.pad2(date.getMinutes()) + " " + suffix
+      var minutes = date.getMinutes()
+      if (minutes === 0) return displayHour + suffix
+      return displayHour + ":" + DateTimeUtils.pad2(minutes) + " " + suffix
     }
     return DateTimeUtils.pad2(hour) + ":" + DateTimeUtils.pad2(date.getMinutes())
   }
@@ -2044,32 +2103,32 @@ class DisplayFormatter {
 
     if (DisplayFormatter.isEventAllDay(next)) {
       if (DateTimeUtils.isSameDay(next.start, now) || (nowMs >= start && nowMs < end)) {
-        suffix = " · " + LABEL_ALL_DAY
+        suffix = " " + LABEL_ALL_DAY
       } else {
-        suffix = " · " + DisplayFormatter.dayLabel(next.start, now) + " " + LABEL_ALL_DAY
+        suffix = " " + DisplayFormatter.dayLabel(next.start, now) + " " + LABEL_ALL_DAY
       }
     } else if (nowMs >= start && nowMs < end) {
       var minutesLeft = Math.max(1, Math.round((end - nowMs) / MS_PER_MINUTE))
       if (minutesLeft <= 1) {
-        suffix = " · 1m left"
+        suffix = " 1m left"
       } else if (minutesLeft < MINUTES_PER_HOUR) {
-        suffix = " · " + minutesLeft + "m left"
+        suffix = " " + minutesLeft + "m left"
       } else {
         var hours = Math.floor(minutesLeft / MINUTES_PER_HOUR)
         var remainingMinutes = minutesLeft % MINUTES_PER_HOUR
         suffix =
-          " · " +
+          " " +
           (remainingMinutes > 0 ? hours + "h " + remainingMinutes + "m" : hours + "h") +
           " left"
       }
     } else if (start - nowMs <= MS_PER_HOUR && start > nowMs) {
       var minutesBefore = Math.max(1, Math.round((start - nowMs) / MS_PER_MINUTE))
-      suffix = minutesBefore <= 1 ? " · in a min" : " · in " + minutesBefore + " min"
+      suffix = minutesBefore <= 1 ? " in a min" : " in " + minutesBefore + " min"
     } else {
-      suffix = " · " + DisplayFormatter.hm(next.start, use12Hour)
+      suffix = " " + DisplayFormatter.hm(next.start, use12Hour)
       if (!DateTimeUtils.isSameDay(next.start, now))
         suffix =
-          " · " +
+          " " +
           DisplayFormatter.dayLabel(next.start, now) +
           " " +
           DisplayFormatter.hm(next.start, use12Hour)
@@ -2283,6 +2342,9 @@ class PanelNavigationModel {
 function parseIcs(text, options) {
   return IcsParser.parse(text, options)
 }
+function calendarEmailFromIcsUrl(url) {
+  return IcsParser.calendarEmailFromIcsUrl(url)
+}
 function parseJsonEvents(items, options) {
   return JsonStateParser.parseJsonEvents(items, options)
 }
@@ -2440,6 +2502,7 @@ if (typeof module !== "undefined" && module.exports) {
 
     // Public API functions
     parseIcs: parseIcs,
+    calendarEmailFromIcsUrl: calendarEmailFromIcsUrl,
     parseJsonEvents: parseJsonEvents,
     parseJsonState: parseJsonState,
     serializeIcsCache: serializeIcsCache,

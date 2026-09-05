@@ -157,9 +157,19 @@ describe("ScheduleAggregator", () => {
       assert.strictEqual(state.nextMeeting.title, "Daily Standup")
       assert.strictEqual(state.meetings.length, 2)
       assert.strictEqual(state.upcomingToday.length, 1)
-      assert.strictEqual(state.scheduleGroups.length, 2)
+      assert.strictEqual(state.scheduleGroups.length, 1)
+      assert.strictEqual(state.scheduleGroups[0].items[0].title, "Saturday Sync")
       assert.strictEqual(state.calendarLegend.length, 1)
       assert.strictEqual(state.calendarLegend[0].name, "Work")
+    })
+
+    it("omits the featured next meeting from schedule groups", () => {
+      const events = [todayTimed1, todayTimed2]
+      const state = ScheduleAggregator.computeScheduleState(events, now, { lookaheadDays: 3 })
+      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+      assert.strictEqual(state.scheduleGroups.length, 1)
+      assert.strictEqual(state.scheduleGroups[0].items.length, 1)
+      assert.strictEqual(state.scheduleGroups[0].items[0].title, "Design Review")
     })
   })
 })

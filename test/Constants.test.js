@@ -28,7 +28,7 @@ describe("Constants", () => {
       assert.strictEqual(Constants.MIN_MAX_TITLE_LENGTH, 8)
       assert.strictEqual(Constants.MIN_TITLE_CHARS, 3)
       assert.strictEqual(Constants.DEFAULT_REFRESH_MINUTES, 5)
-      assert.strictEqual(Constants.DEFAULT_MAX_FEED_SIZE_MIB, 10)
+      assert.strictEqual(Constants.DEFAULT_MAX_FEED_SIZE_MIB, 32)
       assert.strictEqual(
         Constants.DEFAULT_CALENDAR_URL_BASE,
         "https://calendar.google.com/calendar"
@@ -40,7 +40,7 @@ describe("Constants", () => {
       assert.strictEqual(Constants.TIME_FORMAT_12, "12")
       assert.strictEqual(Constants.TIME_FORMAT_24, "24")
       assert.strictEqual(Constants.DEFAULT_TIME_FORMAT, "24")
-      assert.strictEqual(Constants.FETCH_TIMEOUT_SECONDS, 15)
+      assert.strictEqual(Constants.FETCH_TIMEOUT_SECONDS, 60)
       assert.strictEqual(Constants.BYTES_PER_MIB, 1048576)
     })
   })
@@ -50,7 +50,7 @@ describe("Constants", () => {
       assert.strictEqual(Constants.ICON_MEETING_VIDEO, "")
       assert.strictEqual(Constants.ICON_CALENDAR_EVENT, "󰃯")
       assert.strictEqual(Constants.ICON_CALENDAR_EMPTY, "󰃲")
-      assert.strictEqual(Constants.ICON_REFRESH, "")
+      assert.strictEqual(Constants.ICON_REFRESH, "󰑐")
       assert.strictEqual(Constants.ICON_SETTINGS, "󰒓")
       assert.strictEqual(Constants.SECTION_TODAY, "TODAY")
       assert.strictEqual(Constants.SECTION_TOMORROW, "TOMORROW")

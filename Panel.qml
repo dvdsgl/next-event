@@ -80,7 +80,7 @@ Panel {
     var onNext = root.activeTab === "next"
     setupGuide.visible = onNext && !configured
     heroCard.visible = onNext && configured && !!root.next
-    emptySchedule.visible = onNext && configured && root.scheduleGroups.length === 0
+    emptySchedule.visible = onNext && configured && !root.next && root.scheduleGroups.length === 0
     scheduleContainer.visible = onNext && configured && root.scheduleGroups.length > 0
     settingsView.visible = !onNext
     settingsView.activeTab = root.activeTab

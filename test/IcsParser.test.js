@@ -136,6 +136,34 @@ describe("IcsParser", () => {
       assert.strictEqual(IcsParser.parse(accepted, { now: NOW }).length, 1)
     })
 
+    it("skips opaque declined events when selfEmail matches the declined attendee", () => {
+      const ics = feed([
+        "STATUS:CONFIRMED",
+        "TRANSP:OPAQUE",
+        "ORGANIZER;CN=Host:mailto:host@example.com",
+        "ATTENDEE;PARTSTAT=DECLINED;CN=David:mailto:david@example.com",
+        "ATTENDEE;PARTSTAT=ACCEPTED;CN=Host:mailto:host@example.com"
+      ])
+      assert.strictEqual(
+        IcsParser.parse(ics, { now: NOW, selfEmail: "david@example.com" }).length,
+        0
+      )
+      assert.strictEqual(
+        IcsParser.parse(ics, { now: NOW, selfEmail: "host@example.com" }).length,
+        1
+      )
+    })
+
+    it("extracts the calendar owner email from a Google iCal URL", () => {
+      assert.strictEqual(
+        IcsParser.calendarEmailFromIcsUrl(
+          "https://calendar.google.com/calendar/ical/david%40example.com/private-abc/basic.ics"
+        ),
+        "david@example.com"
+      )
+      assert.strictEqual(IcsParser.calendarEmailFromIcsUrl("https://example.com/cal.ics"), "")
+    })
+
     it("parses COLOR property and supports options.calendarColor and options.feedLabel", () => {
       const icsWithColor = feed(["COLOR:#ea4335"])
       const events1 = IcsParser.parse(icsWithColor, { now: NOW })

@@ -173,7 +173,8 @@ BarWidget {
         maxEvents: 80,
         now: root.now,
         calendarColor: root.currentFeedColor,
-        feedLabel: root.currentFeedLabel
+        feedLabel: root.currentFeedLabel,
+        selfEmail: Model.calendarEmailFromIcsUrl(root.currentFeedUrl)
       })
       for (var i = 0; i < events.length; i++) {
         if (root.currentFeedLabel) events[i].feedLabel = root.currentFeedLabel
@@ -466,7 +467,6 @@ BarWidget {
     id: nextTooltip
     anchorItem: button
     bar: root.bar
-    owner: root
     triggerMode: "hover"
     open: root.nextTooltipShown && root.nextTooltipWanted
     contentWidth: nextTooltip.fittedContentWidth(Style.space(320))
