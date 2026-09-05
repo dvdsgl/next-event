@@ -2274,8 +2274,7 @@ class PanelNavigationModel {
       return this.actionItems
     }
     var items = [{ kind: ACTION_REFRESH }]
-    if (heroVisible && nextMeeting && nextMeeting.meetUrl) items.push({ kind: ACTION_JOIN })
-    if (heroVisible && nextMeeting) items.push({ kind: ACTION_CALENDAR })
+    if (heroVisible && nextMeeting) items.push({ kind: ACTION_JOIN })
     if (scheduleGroups && scheduleGroups.length) {
       for (var groupIndex = 0; groupIndex < scheduleGroups.length; groupIndex++) {
         var rows = scheduleGroups[groupIndex].items || []

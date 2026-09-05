@@ -125,12 +125,11 @@ Panel {
     var activeItem = navModel.activeItem()
     if (!activeItem) return
     if (activeItem.kind === "refresh") root.refreshNow()
-    else if (activeItem.kind === "join") root.join(root.next)
-    else if (activeItem.kind === "calendar") root.openInCalendar(root.next)
-    else if (activeItem.kind === "event") {
-      var group = root.scheduleGroups[activeItem.groupIndex]
-      if (group) root.join(group.items[activeItem.rowIndex])
-    }
+      else if (activeItem.kind === "join") root.join(root.next)
+      else if (activeItem.kind === "event") {
+        var group = root.scheduleGroups[activeItem.groupIndex]
+        if (group) root.openInCalendar(group.items[activeItem.rowIndex])
+      }
   }
 
   function cursorOn(kind, groupIndex, rowIndex) {
@@ -154,8 +153,7 @@ Panel {
     if (!activeItem) return
     var target = null
     if (activeItem.kind === "refresh") target = headerBar.refreshBtn
-    else if (activeItem.kind === "join") target = heroCard.joinBtn
-    else if (activeItem.kind === "calendar") target = heroCard.openCalendarBtn
+    else if (activeItem.kind === "join") target = heroCard
     else {
       var group = groupRepeater.itemAt(activeItem.groupIndex)
       target = group ? group.rowAt(activeItem.rowIndex) : null
@@ -276,12 +274,9 @@ Panel {
             use12Hour: root.hostWidget ? root.hostWidget.use12Hour : false
             contentForeground: root.contentForeground
             contentFontFamily: root.contentFontFamily
-            cursorOnJoin: root.cursorOn("join")
-            cursorOnCalendar: root.cursorOn("calendar")
+            hasCursor: root.cursorOn("join")
             onJoinRequested: root.join(root.next)
-            onCalendarRequested: root.openInCalendar(root.next)
-            onJoinHovered: function(isHovered) { if (isHovered) root.pointCursorAt("join") }
-            onCalendarHovered: function(isHovered) { if (isHovered) root.pointCursorAt("calendar") }
+            onHovered: root.pointCursorAt("join")
           }
 
           EmptySchedule {
@@ -322,7 +317,7 @@ Panel {
                   cursorIndex: root.cursorIndex
                   cursorActive: root.cursorActive
 
-                  onEventClicked: function(meeting) { root.join(meeting) }
+                  onEventClicked: function(meeting) { root.openInCalendar(meeting) }
                   onEventHovered: function(groupIndex, rowIndex) { root.pointCursorAt("event", groupIndex, rowIndex) }
                 }
               }

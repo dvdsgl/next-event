@@ -485,11 +485,7 @@ BarWidget {
       contentFontFamily: root.bar ? root.bar.fontFamily : Style.font.family
       onJoinRequested: {
         root.nextTooltipShown = false
-        root.joinMeeting(root.nextMeeting)
-      }
-      onCalendarRequested: {
-        root.nextTooltipShown = false
-        root.openCalendar(root.nextMeeting)
+        root.openEvent(root.nextMeeting)
       }
     }
   }

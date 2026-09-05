@@ -14,30 +14,31 @@ Item {
   property bool use12Hour: false
   property color contentForeground: Color.foreground
   property string contentFontFamily: Style.font.family
-  property bool cursorOnJoin: false
-  property bool cursorOnCalendar: false
+  property bool hasCursor: false
   property bool embedded: false
-  property bool showActions: true
 
   signal joinRequested()
-  signal calendarRequested()
-  signal joinHovered(bool isHovered)
-  signal calendarHovered(bool isHovered)
-
-  property alias joinBtn: joinButton
-  property alias openCalendarBtn: openCalendarButton
+  signal hovered()
 
   width: parent ? parent.width : 0
   height: visible ? heroBlock.implicitHeight : 0
   implicitHeight: height
 
-  BorderSurface {
+  CursorSurface {
     id: heroBlock
     width: parent.width
-    radius: Style.cornerRadius
-    color: "transparent"
-    borderSpec: Border.none()
+    hasCursor: root.hasCursor
+    foreground: root.contentForeground
+    accent: Color.accent
     implicitHeight: heroCol.implicitHeight + Style.space(8)
+
+    MouseArea {
+      anchors.fill: parent
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onEntered: root.hovered()
+      onClicked: root.joinRequested()
+    }
 
     Rectangle {
       id: heroColorStripe
@@ -107,46 +108,6 @@ Item {
         font.family: root.contentFontFamily
         font.pixelSize: Style.font.bodySmall
         wrapMode: Text.WordWrap
-      }
-
-      RowLayout {
-        visible: root.showActions
-        width: parent.width
-        spacing: Style.space(8)
-
-        Button {
-          id: joinButton
-          visible: !!(root.next && root.next.meetUrl)
-          text: "Join"
-          iconText: Model.ICON_MEETING_VIDEO
-          selected: true
-          accent: Color.accent
-          fontFamily: root.contentFontFamily
-          fontSize: Style.font.caption
-          iconSize: Style.font.caption
-          horizontalPadding: Style.space(8)
-          verticalPadding: Style.space(3)
-          hasCursor: root.cursorOnJoin
-          onHovered: function(isHovered) { root.joinHovered(isHovered) }
-          onClicked: root.joinRequested()
-        }
-
-        Button {
-          id: openCalendarButton
-          visible: !!root.next
-          text: "Calendar"
-          iconText: Model.ICON_CALENDAR_EVENT
-          bordered: true
-          foreground: root.contentForeground
-          fontFamily: root.contentFontFamily
-          fontSize: Style.font.caption
-          iconSize: Style.font.caption
-          horizontalPadding: Style.space(8)
-          verticalPadding: Style.space(3)
-          hasCursor: root.cursorOnCalendar
-          onHovered: function(isHovered) { root.calendarHovered(isHovered) }
-          onClicked: root.calendarRequested()
-        }
       }
     }
   }

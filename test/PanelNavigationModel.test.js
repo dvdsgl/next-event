@@ -16,23 +16,22 @@ describe("PanelNavigationModel", () => {
   const scheduleGroups = [{ key: 20260828, title: "TODAY", items: [nextMeeting] }]
 
   describe("rebuildActionItems()", () => {
-    it("builds refresh, join, and calendar actions when hero is visible with meet link", () => {
+    it("builds refresh and join actions when hero is visible", () => {
       const nav = new PanelNavigationModel()
       const items = nav.rebuildActionItems(true, nextMeeting, scheduleGroups)
-      assert.strictEqual(items.length, 4)
+      assert.strictEqual(items.length, 3)
       assert.strictEqual(items[0].kind, "refresh")
       assert.strictEqual(items[1].kind, "join")
-      assert.strictEqual(items[2].kind, "calendar")
-      assert.strictEqual(items[3].kind, "event")
+      assert.strictEqual(items[2].kind, "event")
     })
 
-    it("omits join action when meeting lacks video URL", () => {
+    it("keeps join action when meeting lacks video URL", () => {
       const nav = new PanelNavigationModel()
       const noMeet = new CalendarEvent({ uid: "m2", title: "Focus" })
       const items = nav.rebuildActionItems(true, noMeet, [])
       assert.strictEqual(items.length, 2)
       assert.strictEqual(items[0].kind, "refresh")
-      assert.strictEqual(items[1].kind, "calendar")
+      assert.strictEqual(items[1].kind, "join")
     })
 
     it("builds only refresh action when agenda is skipped", () => {
@@ -89,7 +88,7 @@ describe("PanelNavigationModel", () => {
       nav.rebuildActionItems(true, nextMeeting, scheduleGroups)
 
       const idx = nav.pointCursorAt("event", 0, 0)
-      assert.strictEqual(idx, 3)
+      assert.strictEqual(idx, 2)
       assert.strictEqual(nav.isCursorOn("event", 0, 0), true)
     })
   })
