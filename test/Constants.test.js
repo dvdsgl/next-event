@@ -56,6 +56,10 @@ describe("Constants", () => {
       assert.strictEqual(Constants.SECTION_TOMORROW, "TOMORROW")
       assert.strictEqual(Constants.SECTION_EVENTS, "EVENTS")
       assert.strictEqual(Constants.SECTION_SETTINGS, "SETTINGS")
+      assert.strictEqual(Constants.SECTION_CALENDARS, "CALENDARS")
+      assert.strictEqual(Constants.SECTION_APPEARANCE, "APPEARANCE")
+      assert.strictEqual(Constants.SECTION_ACTIONS, "ACTIONS")
+      assert.strictEqual(Constants.SECTION_SHORTCUTS, "SHORTCUTS")
       assert.strictEqual(Constants.SECTION_HAPPENING_NOW, "HAPPENING NOW")
       assert.strictEqual(Constants.SECTION_NEXT, "NEXT")
       assert.strictEqual(Constants.LABEL_ALL_DAY, "All day")
@@ -84,6 +88,7 @@ describe("Constants", () => {
       assert.strictEqual(Constants.TOOLTIP_REFRESH, "Refresh calendar")
       assert.strictEqual(Constants.TOOLTIP_SETTINGS, "Settings (,)")
       assert.strictEqual(Constants.TOOLTIP_BACK_SCHEDULE, "Back to schedule")
+      assert.strictEqual(Constants.TOOLTIP_BACK_SETTINGS, "Back to settings")
     })
   })
 

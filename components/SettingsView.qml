@@ -9,6 +9,7 @@ Item {
   property var hostWidget: null
   property color contentForeground: Color.foreground
   property string contentFontFamily: Style.font.family
+  property string activeTab: "calendars"
 
   signal settingChanged(string key, var value)
   signal closeRequested()
@@ -108,6 +109,7 @@ Item {
     || keyJoinInput.isEditing
     || keyCalendarInput.isEditing
     || feedsHaveFocus()
+    || sourceDropdown.popupOpen
 
   width: parent ? parent.width : 0
   height: visible ? settingsColumn.implicitHeight : 0
@@ -116,78 +118,46 @@ Item {
   Column {
     id: settingsColumn
     width: parent.width
-    spacing: Style.space(14)
+    spacing: Style.space(10)
 
-    // =========================================================================
-    // 1. Calendar Source & Feeds
-    // =========================================================================
     Column {
+      visible: root.activeTab === "calendars"
       width: parent.width
       spacing: Style.space(10)
 
-      PanelSectionHeader {
-        text: "CALENDAR SOURCE"
+      Dropdown {
+        id: sourceDropdown
+        width: parent.width
+        label: "Source"
+        value: root.currentSourceMode
+        options: [
+          { value: Model.SOURCE_MODE_ICS, label: "iCal" },
+          { value: Model.SOURCE_MODE_JSON, label: "Google Auth" }
+        ]
         foreground: root.contentForeground
         fontFamily: root.contentFontFamily
+        onChanged: function(v) { root.settingChanged("sourceMode", v) }
       }
 
-      SourceModeSwitcher {
-        currentMode: root.currentSourceMode
-        contentForeground: root.contentForeground
-        contentFontFamily: root.contentFontFamily
-        onModeChanged: function(m) { root.settingChanged("sourceMode", m) }
-      }
-
-      // ---- ICS Mode View ----
       Column {
         visible: root.currentSourceMode === Model.SOURCE_MODE_ICS
         width: parent.width
-        spacing: Style.space(8)
+        spacing: Style.space(10)
 
-        Item {
-          width: parent.width
-          height: Math.max(feedSubHeader.height, addFeedBtn.height)
+      Text {
+        visible: root.feedsList.length === 0
+        width: parent.width
+        textFormat: Text.PlainText
+        text: "Add a private calendar URL (Google, Outlook, iCloud, Nextcloud)."
+        color: Qt.darker(root.contentForeground, Tokens.dimMeta)
+        font.family: root.contentFontFamily
+        font.pixelSize: Style.font.caption
+        wrapMode: Text.WordWrap
+      }
 
-          Text {
-            id: feedSubHeader
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            textFormat: Text.PlainText
-            text: "CONFIGURED FEEDS"
-            color: Qt.darker(root.contentForeground, Tokens.dimMuted)
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-            font.letterSpacing: Tokens.sectionLetterSpacing
-            font.bold: true
-          }
-
-          Button {
-            id: addFeedBtn
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            iconText: "+"
-            text: "Add Feed"
-            bordered: true
-            foreground: root.contentForeground
-            accent: Color.accent
-            fontFamily: root.contentFontFamily
-            fontSize: Style.font.caption
-            horizontalPadding: Style.space(8)
-            verticalPadding: Style.space(4)
-            onClicked: root.addFeed()
-          }
-        }
-
-        Text {
-          visible: root.feedsList.length === 0
-          width: parent.width
-          textFormat: Text.PlainText
-          text: "No ICS feeds added yet. Click \"+ Add Feed\" to add calendar URLs (Google Calendar, Outlook, iCloud, Proton, Nextcloud)."
-          color: Qt.darker(root.contentForeground, Tokens.dimMeta)
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
-        }
+      Column {
+        width: parent.width
+        spacing: Style.space(16)
 
         Repeater {
           id: feedsRepeater
@@ -211,45 +181,83 @@ Item {
             onRemoveRequested: root.removeFeed(index)
           }
         }
+
+        Item {
+          width: parent.width
+          height: addFeedBtn.height
+
+          PanelActionButton {
+            id: addFeedBtn
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: "󰐕"
+            fontSize: Style.font.body
+            tooltipText: "Add feed"
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+            onClicked: root.addFeed()
+          }
+        }
       }
 
-      // ---- OAuth / JSON Mode View ----
-      SettingField {
-        id: eventsJsonField
+      SettingStepper {
+        id: maxFeedSizeStepper
+        width: parent.width
+        label: "Max feed size"
+        from: 1
+        to: 100
+        stepSize: 1
+        value: root.hostWidget ? root.hostWidget.maxFeedSizeMiB : Model.DEFAULT_MAX_FEED_SIZE_MIB
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(v) { root.settingChanged("maxFeedSizeMiB", v) }
+      }
+      }
+
+      Column {
         visible: root.currentSourceMode === Model.SOURCE_MODE_JSON
         width: parent.width
-        label: "Events JSON state path"
-        description: "Local state file synced with Google Calendar via OAuth background service."
+        spacing: Style.space(10)
+
+      Text {
+        width: parent.width
+        textFormat: Text.PlainText
+        text: "For Google Workspace when private iCal URLs are blocked."
+        color: Qt.darker(root.contentForeground, Tokens.dimMeta)
+        font.family: root.contentFontFamily
+        font.pixelSize: Style.font.caption
+        wrapMode: Text.WordWrap
+      }
+
+      SetupCard {
+        title: ""
+        description: "Run once to sign in and sync:"
+        command: Model.LABEL_SETUP_OPTION1_CMD
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+      }
+
+      SettingField {
+        id: eventsJsonField
+        width: parent.width
+        label: "State file"
         text: root.hostWidget ? String(root.hostWidget.setting("eventsJsonPath", root.hostWidget.eventsJsonPath || "")) : ""
         placeholderText: "~/.local/state/omarchy/calendar-events.json"
         contentForeground: root.contentForeground
         contentFontFamily: root.contentFontFamily
         onModified: function(val) { root.settingChanged("eventsJsonPath", val) }
       }
-    }
-
-    PanelSeparator {
-      foreground: root.contentForeground
-      strength: Tokens.separatorGroup
-    }
-
-    // =========================================================================
-    // 2. Agenda & Lookahead (Steppers)
-    // =========================================================================
-    Column {
-      width: parent.width
-      spacing: Style.space(12)
-
-      PanelSectionHeader {
-        text: "AGENDA & LOOKAHEAD"
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
       }
+    }
+
+    Column {
+      visible: root.activeTab === "options"
+      width: parent.width
+      spacing: Style.space(10)
 
       SettingStepper {
         id: daysAheadStepper
-        label: "Lookahead days"
-        description: "Days ahead to show in schedule"
+        label: "Days ahead"
         from: 1
         to: 30
         stepSize: 1
@@ -261,8 +269,7 @@ Item {
 
       SettingStepper {
         id: refreshMinStepper
-        label: "Refresh interval"
-        description: "Minutes between automatic ICS calendar refetches"
+        label: "Refresh (minutes)"
         from: 1
         to: 120
         stepSize: 1
@@ -274,8 +281,7 @@ Item {
 
       SettingStepper {
         id: maxTitleStepper
-        label: "Max bar title length"
-        description: "Maximum character length for the event title in the bar"
+        label: "Bar title length"
         from: 8
         to: 100
         stepSize: 1
@@ -285,112 +291,73 @@ Item {
         onModified: function(v) { root.settingChanged("maxTitleLength", v) }
       }
 
-      SettingStepper {
-        id: maxFeedSizeStepper
-        label: "Max feed size"
-        description: "Maximum download limit (MiB) for each calendar feed"
-        from: 1
-        to: 100
-        stepSize: 1
-        value: root.hostWidget ? root.hostWidget.maxFeedSizeMiB : Model.DEFAULT_MAX_FEED_SIZE_MIB
+      SettingToggle {
+        width: parent.width
+        label: "Only video meetings on the bar"
+        checked: root.hostWidget ? root.hostWidget.showOnlyWithVideoLink : false
         contentForeground: root.contentForeground
         contentFontFamily: root.contentFontFamily
-        onModified: function(v) { root.settingChanged("maxFeedSizeMiB", v) }
-      }
-    }
-
-    PanelSeparator {
-      foreground: root.contentForeground
-      strength: Tokens.separatorGroup
-    }
-
-    // =========================================================================
-    // 3. Display Options
-    // =========================================================================
-    Column {
-      width: parent.width
-      spacing: Style.space(8)
-
-      PanelSectionHeader {
-        text: "DISPLAY OPTIONS"
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
-      }
-
-      Toggle {
-        width: parent.width
-        label: "Video meetings only in bar"
-        description: "Only show upcoming events on the bar if they carry a video call link"
-        checked: root.hostWidget ? root.hostWidget.showOnlyWithVideoLink : false
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
         onClicked: root.settingChanged("showOnlyWithVideoLink", !checked)
       }
 
-      Toggle {
+      SettingToggle {
         width: parent.width
-        label: "Show calendar badges"
-        description: "Show feed name badge on events and in tooltips"
+        label: "Show calendar names"
         checked: root.hostWidget ? root.hostWidget.showCalendarLabel : true
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
         onClicked: root.settingChanged("showCalendarLabel", !checked)
       }
 
-      Toggle {
+      SettingToggle {
         width: parent.width
-        label: "Use calendar colors"
-        description: "Tint event badges and indicators with calendar feed colors"
+        label: "Show calendar icon"
+        checked: root.hostWidget ? root.hostWidget.showCalendarIcon : true
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onClicked: root.settingChanged("showCalendarIcon", !checked)
+      }
+
+      SettingToggle {
+        width: parent.width
+        label: "Color events by calendar"
         checked: root.hostWidget ? root.hostWidget.useCalendarColors : true
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
         onClicked: root.settingChanged("useCalendarColors", !checked)
       }
 
-      Toggle {
+      SettingToggle {
         width: parent.width
-        label: "Tint bar widget text"
-        description: "Tint the bar label using the next meeting's calendar color"
+        label: "Color bar text by calendar"
         checked: root.hostWidget ? root.hostWidget.colorOnBar : false
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
         onClicked: root.settingChanged("colorOnBar", !checked)
       }
 
-      Toggle {
+      SettingToggle {
         width: parent.width
-        label: "12-hour time format"
-        description: "Display times using 12-hour AM/PM format instead of 24-hour clock"
-        checked: root.hostWidget ? root.hostWidget.use12Hour : false
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
-        onClicked: root.settingChanged("timeFormat", checked ? Model.TIME_FORMAT_24 : Model.TIME_FORMAT_12)
+        label: "Urgent color while in a meeting"
+        checked: root.hostWidget ? root.hostWidget.urgentDuringMeeting : false
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onClicked: root.settingChanged("urgentDuringMeeting", !checked)
       }
-    }
 
-    PanelSeparator {
-      foreground: root.contentForeground
-      strength: Tokens.separatorGroup
-    }
-
-    // =========================================================================
-    // 4. Actions & Integrations
-    // =========================================================================
-    Column {
-      width: parent.width
-      spacing: Style.space(8)
-
-      PanelSectionHeader {
-        text: "ACTIONS & INTEGRATIONS"
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
+      SettingToggle {
+        width: parent.width
+        label: "12-hour time"
+        checked: root.hostWidget ? root.hostWidget.use12Hour : false
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onClicked: root.settingChanged("timeFormat", checked ? Model.TIME_FORMAT_24 : Model.TIME_FORMAT_12)
       }
 
       SettingField {
         id: calendarUrlField
         width: parent.width
-        label: "Calendar base URL"
-        description: "Base URL for \"Open in Calendar\" (e.g. append /u/1 for multi-account)."
+        label: "Calendar URL"
         text: root.hostWidget ? String(root.hostWidget.setting("calendarUrlBase", Model.DEFAULT_CALENDAR_URL_BASE)) : Model.DEFAULT_CALENDAR_URL_BASE
         placeholderText: "https://calendar.google.com/calendar"
         contentForeground: root.contentForeground
@@ -401,83 +368,52 @@ Item {
       SettingField {
         id: browserCmdField
         width: parent.width
-        label: "Browser command"
-        description: "Custom command used to open meeting and calendar URLs (defaults to xdg-open)."
+        label: "Open with"
         text: root.hostWidget ? String(root.hostWidget.setting("browserCommand", "")) : ""
         placeholderText: "xdg-open"
         contentForeground: root.contentForeground
         contentFontFamily: root.contentFontFamily
         onModified: function(val) { root.settingChanged("browserCommand", val) }
       }
-    }
 
-    PanelSeparator {
-      foreground: root.contentForeground
-      strength: Tokens.separatorGroup
-    }
-
-    // =========================================================================
-    // 5. Panel Shortcuts
-    // =========================================================================
-    Column {
-      width: parent.width
-      spacing: Style.space(8)
-
-      PanelSectionHeader {
-        text: "PANEL SHORTCUTS"
-        foreground: root.contentForeground
-        fontFamily: root.contentFontFamily
+      SettingKeyInput {
+        id: keyRefreshInput
+        label: "Refresh"
+        key: root.hostWidget ? root.hostWidget.keyRefresh : Model.DEFAULT_KEY_REFRESH
+        defaultKey: Model.DEFAULT_KEY_REFRESH
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(k) { root.settingChanged("keyRefresh", k) }
       }
 
-      Grid {
-        width: parent.width
-        columns: 2
-        columnSpacing: Style.space(12)
-        rowSpacing: Style.space(8)
+      SettingKeyInput {
+        id: keySettingsInput
+        label: "Options tab"
+        key: root.hostWidget ? root.hostWidget.keySettings : Model.DEFAULT_KEY_SETTINGS
+        defaultKey: Model.DEFAULT_KEY_SETTINGS
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(k) { root.settingChanged("keySettings", k) }
+      }
 
-        SettingKeyInput {
-          id: keyRefreshInput
-          width: (parent.width - parent.columnSpacing) / 2
-          label: "Refresh key"
-          key: root.hostWidget ? root.hostWidget.keyRefresh : Model.DEFAULT_KEY_REFRESH
-          defaultKey: Model.DEFAULT_KEY_REFRESH
-          contentForeground: root.contentForeground
-          contentFontFamily: root.contentFontFamily
-          onModified: function(k) { root.settingChanged("keyRefresh", k) }
-        }
+      SettingKeyInput {
+        id: keyJoinInput
+        label: "Join meeting"
+        key: root.hostWidget ? root.hostWidget.keyJoin : Model.DEFAULT_KEY_JOIN
+        defaultKey: Model.DEFAULT_KEY_JOIN
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(k) { root.settingChanged("keyJoin", k) }
+      }
 
-        SettingKeyInput {
-          id: keySettingsInput
-          width: (parent.width - parent.columnSpacing) / 2
-          label: "Settings key"
-          key: root.hostWidget ? root.hostWidget.keySettings : Model.DEFAULT_KEY_SETTINGS
-          defaultKey: Model.DEFAULT_KEY_SETTINGS
-          contentForeground: root.contentForeground
-          contentFontFamily: root.contentFontFamily
-          onModified: function(k) { root.settingChanged("keySettings", k) }
-        }
-
-        SettingKeyInput {
-          id: keyJoinInput
-          width: (parent.width - parent.columnSpacing) / 2
-          label: "Join key"
-          key: root.hostWidget ? root.hostWidget.keyJoin : Model.DEFAULT_KEY_JOIN
-          defaultKey: Model.DEFAULT_KEY_JOIN
-          contentForeground: root.contentForeground
-          contentFontFamily: root.contentFontFamily
-          onModified: function(k) { root.settingChanged("keyJoin", k) }
-        }
-
-        SettingKeyInput {
-          id: keyCalendarInput
-          width: (parent.width - parent.columnSpacing) / 2
-          label: "Calendar key"
-          key: root.hostWidget ? root.hostWidget.keyCalendar : Model.DEFAULT_KEY_CALENDAR
-          defaultKey: Model.DEFAULT_KEY_CALENDAR
-          contentForeground: root.contentForeground
-          contentFontFamily: root.contentFontFamily
-          onModified: function(k) { root.settingChanged("keyCalendar", k) }
-        }
+      SettingKeyInput {
+        id: keyCalendarInput
+        label: "Open calendar"
+        key: root.hostWidget ? root.hostWidget.keyCalendar : Model.DEFAULT_KEY_CALENDAR
+        defaultKey: Model.DEFAULT_KEY_CALENDAR
+        contentForeground: root.contentForeground
+        contentFontFamily: root.contentFontFamily
+        onModified: function(k) { root.settingChanged("keyCalendar", k) }
       }
     }
   }

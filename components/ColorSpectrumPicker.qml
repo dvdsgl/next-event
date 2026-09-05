@@ -27,7 +27,7 @@ Item {
     RowLayout {
       id: colorRow
       width: parent.width
-      spacing: Style.space(6)
+      spacing: Style.space(4)
 
       Repeater {
         model: Model.CALENDAR_COLOR_PALETTE
@@ -35,8 +35,8 @@ Item {
         Rectangle {
           required property string modelData
           Layout.alignment: Qt.AlignVCenter
-          implicitWidth: Style.space(16)
-          implicitHeight: Style.space(16)
+          implicitWidth: Style.space(12)
+          implicitHeight: Style.space(12)
           radius: width * 0.5
           color: modelData
           border.width: (root.selectedColor && root.selectedColor.toLowerCase() === modelData.toLowerCase()) ? Style.space(2) : 0
@@ -45,32 +45,9 @@ Item {
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-              hexInput.text = modelData
-              root.colorSelected(modelData)
-            }
+            onClicked: root.colorSelected(modelData)
           }
         }
-      }
-
-      Rectangle {
-        id: customColorPreview
-        Layout.alignment: Qt.AlignVCenter
-        implicitWidth: Style.space(16)
-        implicitHeight: Style.space(16)
-        radius: width * 0.5
-        readonly property string previewColor: {
-          var t = hexInput.text.trim()
-          if (Model.isValidHexColor(t)) return t
-          if (root.selectedColor && Model.isValidHexColor(root.selectedColor)) return root.selectedColor
-          return ""
-        }
-        visible: previewColor !== "" && !Model.CALENDAR_COLOR_PALETTE.some(function(c) {
-          return c.toLowerCase() === previewColor.toLowerCase()
-        })
-        color: previewColor || "transparent"
-        border.width: Style.space(2)
-        border.color: root.contentForeground
       }
 
       TextField {
@@ -82,6 +59,8 @@ Item {
         foreground: root.contentForeground
         font.family: root.contentFontFamily
         font.pixelSize: Style.font.caption
+        horizontalPadding: Style.space(4)
+        verticalPadding: Style.space(2)
         onTextChanged: {
           var val = text.trim()
           if (Model.isValidHexColor(val)) root.colorSelected(val)
@@ -93,6 +72,8 @@ Item {
         }
         Keys.onPressed: function(e) { if (e.key === Qt.Key_Escape) { focus = false; e.accepted = true } }
       }
+
+      Item { Layout.fillWidth: true }
     }
 
     Rectangle {

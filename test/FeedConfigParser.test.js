@@ -14,12 +14,12 @@ describe("FeedConfigParser", () => {
       assert.deepStrictEqual(feeds[0], {
         url: "https://cal.example.com/work.ics",
         label: "Work",
-        color: "#4285f4"
+        color: "#ea4335"
       })
       assert.deepStrictEqual(feeds[1], {
         url: "https://cal.example.com/personal.ics",
         label: undefined,
-        color: "#34a853"
+        color: "#fa7b17"
       })
     })
 
@@ -49,7 +49,7 @@ describe("FeedConfigParser", () => {
       assert.deepStrictEqual(jsonFeeds[1], {
         url: "https://b.com",
         label: undefined,
-        color: "#34a853"
+        color: "#fa7b17"
       })
     })
 
@@ -73,8 +73,8 @@ describe("FeedConfigParser", () => {
 
   describe("pickCalendarColor()", () => {
     it("picks deterministic palette colors based on index or seed", () => {
-      assert.strictEqual(FeedConfigParser.pickCalendarColor("", 0), "#4285f4")
-      assert.strictEqual(FeedConfigParser.pickCalendarColor("", 1), "#34a853")
+      assert.strictEqual(FeedConfigParser.pickCalendarColor("", 0), "#ea4335")
+      assert.strictEqual(FeedConfigParser.pickCalendarColor("", 1), "#fa7b17")
       assert.strictEqual(typeof FeedConfigParser.pickCalendarColor("Work"), "string")
       assert.strictEqual(FeedConfigParser.pickCalendarColor("Work").startsWith("#"), true)
     })

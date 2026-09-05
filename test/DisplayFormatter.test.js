@@ -130,6 +130,12 @@ describe("DisplayFormatter", () => {
         end: new Date(2026, 7, 28, 10, 0, 0)
       })
       assert.strictEqual(DisplayFormatter.relativeStatus(in5MinEvent, now, true), "starts in 5 min")
+
+      const happeningNow = new CalendarEvent({
+        start: new Date(2026, 7, 28, 8, 30, 0),
+        end: new Date(2026, 7, 28, 9, 21, 0)
+      })
+      assert.strictEqual(DisplayFormatter.relativeStatus(happeningNow, now, false), "21m left")
     })
   })
 
@@ -139,6 +145,15 @@ describe("DisplayFormatter", () => {
         DisplayFormatter.formatLabel(timedEvent, now, 30),
         "Sprint Review · in 60 min"
       )
+    })
+
+    it("formats an in-progress timed event with compact remaining time", () => {
+      const happeningNow = new CalendarEvent({
+        title: "Standup",
+        start: new Date(2026, 7, 28, 8, 30, 0),
+        end: new Date(2026, 7, 28, 9, 21, 0)
+      })
+      assert.strictEqual(DisplayFormatter.formatLabel(happeningNow, now, 30), "Standup · 21m left")
     })
 
     it("formats future timed event with 24-hour and 12-hour formats", () => {
@@ -216,13 +231,20 @@ describe("DisplayFormatter", () => {
       assert.strictEqual(DisplayFormatter.barLabel(false, timedEvent, now, 30), "")
       assert.strictEqual(DisplayFormatter.barLabel(true, null, now, 30), "")
     })
+
+    it("omits the calendar icon when showCalendarIcon is false", () => {
+      assert.strictEqual(
+        DisplayFormatter.barLabel(true, timedEvent, now, 30, false, false),
+        "Sprint Review · in 60 min"
+      )
+    })
   })
 
   describe("headerStatus()", () => {
-    it("returns updating status while fetching", () => {
+    it("does not show an updating label while fetching", () => {
       assert.strictEqual(
         DisplayFormatter.headerStatus(true, false, 0, null, now, true),
-        "updating…"
+        ""
       )
     })
 

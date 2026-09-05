@@ -6,7 +6,7 @@ Column {
   id: root
 
   property string label: ""
-  property string description: ""
+  property string hint: ""
   property string text: ""
   property string placeholderText: ""
   property color contentForeground: Color.foreground
@@ -20,25 +20,31 @@ Column {
   width: parent ? parent.width : 0
   spacing: Style.space(3)
 
-  Text {
-    visible: root.label !== ""
-    textFormat: Text.PlainText
-    text: root.label
-    color: root.contentForeground
-    font.family: root.contentFontFamily
-    font.pixelSize: Style.font.bodySmall
-    font.bold: true
-  }
-
-  Text {
-    visible: root.description !== ""
+  Row {
     width: parent.width
-    textFormat: Text.PlainText
-    text: root.description
-    color: Qt.darker(root.contentForeground, Tokens.dimMeta)
-    font.family: root.contentFontFamily
-    font.pixelSize: Style.font.caption
-    wrapMode: Text.WordWrap
+    spacing: Style.space(6)
+    visible: root.label !== "" || root.hint !== ""
+
+    Text {
+      visible: root.label !== ""
+      width: Math.min(implicitWidth, parent.width - (hintIcon.visible ? hintIcon.width + parent.spacing : 0))
+      textFormat: Text.PlainText
+      text: root.label
+      color: root.contentForeground
+      font.family: root.contentFontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: true
+      elide: Text.ElideRight
+      anchors.verticalCenter: parent.verticalCenter
+    }
+
+    SettingHint {
+      id: hintIcon
+      text: root.hint
+      contentForeground: root.contentForeground
+      contentFontFamily: root.contentFontFamily
+      anchors.verticalCenter: parent.verticalCenter
+    }
   }
 
   TextField {

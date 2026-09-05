@@ -1,10 +1,9 @@
 import QtQuick
-import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
 import "../Model.js" as Model
 
-BorderSurface {
+Item {
   id: root
 
   property int feedIndex: 0
@@ -13,6 +12,7 @@ BorderSurface {
   property string feedColor: ""
   property color contentForeground: Color.foreground
   property string contentFontFamily: Style.font.family
+  property bool pickingColor: false
 
   signal labelModified(string newLabel)
   signal urlModified(string newUrl)
@@ -21,60 +21,59 @@ BorderSurface {
 
   readonly property bool isEditing: labelInput.activeFocus || urlInput.activeFocus || colorPicker.isEditing
 
-  implicitHeight: feedCardCol.implicitHeight + Style.space(16)
-  radius: Style.cornerRadius
-  color: Style.normalFillFor(root.contentForeground, Color.accent)
-  borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
+  width: parent ? parent.width : 0
+  height: feedCardCol.implicitHeight
+  implicitHeight: height
 
   Column {
     id: feedCardCol
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.verticalCenter: parent.verticalCenter
-    anchors.margins: Style.space(8)
+    width: parent.width
     spacing: Style.space(6)
 
     Item {
       width: parent.width
-      height: Math.max(feedCardTitleRow.implicitHeight, deleteFeedBtn.height)
+      height: Math.max(colorChip.height, labelInput.implicitHeight, deleteFeedBtn.height)
 
-      RowLayout {
-        id: feedCardTitleRow
+      Rectangle {
+        id: colorChip
         anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: Style.space(28)
+        height: Style.space(28)
+        radius: Style.cornerRadius
+        color: root.feedColor || Color.accent
+        border.width: root.pickingColor ? Style.space(2) : Style.space(1)
+        border.color: root.contentForeground
+
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.pickingColor = !root.pickingColor
+        }
+      }
+
+      TextField {
+        id: labelInput
+        anchors.left: colorChip.right
+        anchors.leftMargin: Style.space(8)
         anchors.right: deleteFeedBtn.left
         anchors.rightMargin: Style.space(8)
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Style.space(6)
-
-        Rectangle {
-          id: feedColorDot
-          Layout.alignment: Qt.AlignVCenter
-          implicitWidth: Style.space(Tokens.dotSize)
-          implicitHeight: Style.space(Tokens.dotSize)
-          radius: width * 0.5
-          color: root.feedColor || Color.accent
-        }
-
-        Text {
-          id: feedCardTitle
-          Layout.fillWidth: true
-          Layout.alignment: Qt.AlignVCenter
-          textFormat: Text.PlainText
-          text: "Feed " + (root.feedIndex + 1) + (root.feedLabel ? (" · " + root.feedLabel) : "")
-          color: root.contentForeground
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
-          font.bold: true
-          elide: Text.ElideRight
-        }
+        text: root.feedLabel
+        placeholderText: "Label"
+        foreground: root.contentForeground
+        font.family: root.contentFontFamily
+        font.pixelSize: Style.font.bodySmall
+        onEditingFinished: root.labelModified(text.trim())
+        Keys.onPressed: function(e) { if (e.key === Qt.Key_Escape) { focus = false; e.accepted = true } }
       }
 
       PanelActionButton {
         id: deleteFeedBtn
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        iconText: "✕"
-        fontSize: Style.font.caption
+        iconText: "󰅖"
+        fontSize: Style.font.body
         hoverColor: Color.urgent
         tooltipText: "Remove feed"
         foreground: root.contentForeground
@@ -83,32 +82,30 @@ BorderSurface {
       }
     }
 
-    TextField {
-      id: labelInput
+    Item {
+      visible: !root.pickingColor
       width: parent.width
-      text: root.feedLabel
-      placeholderText: "Label (e.g. Work, Personal, Team)"
-      foreground: root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.bodySmall
-      onEditingFinished: root.labelModified(text.trim())
-      Keys.onPressed: function(e) { if (e.key === Qt.Key_Escape) { focus = false; e.accepted = true } }
-    }
+      height: urlInput.implicitHeight
 
-    TextField {
-      id: urlInput
-      width: parent.width
-      text: root.feedUrl
-      placeholderText: "iCal (.ics) feed URL (https://...)"
-      foreground: root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.bodySmall
-      onEditingFinished: root.urlModified(text.trim())
-      Keys.onPressed: function(e) { if (e.key === Qt.Key_Escape) { focus = false; e.accepted = true } }
+      TextField {
+        id: urlInput
+        anchors.left: parent.left
+        anchors.leftMargin: colorChip.width + Style.space(8)
+        anchors.right: parent.right
+        anchors.rightMargin: deleteFeedBtn.width + Style.space(8)
+        text: root.feedUrl
+        placeholderText: "Feed URL"
+        foreground: root.contentForeground
+        font.family: root.contentFontFamily
+        font.pixelSize: Style.font.bodySmall
+        onEditingFinished: root.urlModified(text.trim())
+        Keys.onPressed: function(e) { if (e.key === Qt.Key_Escape) { focus = false; e.accepted = true } }
+      }
     }
 
     ColorSpectrumPicker {
       id: colorPicker
+      visible: root.pickingColor
       width: parent.width
       selectedColor: root.feedColor || "#4285f4"
       contentForeground: root.contentForeground

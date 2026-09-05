@@ -3,7 +3,7 @@ import qs.Commons
 import qs.Ui
 import "../Model.js" as Model
 
-Column {
+Item {
   id: root
 
   property string label: ""
@@ -17,20 +17,32 @@ Column {
   readonly property bool isEditing: inputField.activeFocus
   property alias field: inputField
 
-  spacing: Style.space(3)
+  width: parent ? parent.width : 0
+  height: Math.max(labelText.implicitHeight, inputField.implicitHeight)
+  implicitHeight: height
 
   Text {
+    id: labelText
+    anchors.left: parent.left
+    anchors.right: inputField.left
+    anchors.rightMargin: Style.space(12)
+    anchors.verticalCenter: parent.verticalCenter
     textFormat: Text.PlainText
     text: root.label
     color: root.contentForeground
     font.family: root.contentFontFamily
-    font.pixelSize: Style.font.caption
+    font.pixelSize: Style.font.bodySmall
     font.bold: true
+    elide: Text.ElideRight
   }
 
   TextField {
     id: inputField
-    width: parent.width
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: Style.space(40)
+    horizontalPadding: Style.space(4)
+    verticalPadding: Style.space(2)
     maximumLength: 1
     text: root.key || root.defaultKey
     placeholderText: root.defaultKey

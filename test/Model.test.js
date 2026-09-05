@@ -30,7 +30,7 @@ describe("Model (Facade)", () => {
       assert.strictEqual(Model.is12Hour("12"), true)
       assert.strictEqual(Model.is12Hour("24"), false)
       assert.strictEqual(Model.isValidHexColor("#4285f4"), true)
-      assert.strictEqual(Model.pickCalendarColor("", 0), "#4285f4")
+      assert.strictEqual(Model.pickCalendarColor("", 0), "#ea4335")
       assert.strictEqual(Array.isArray(Model.CALENDAR_COLOR_PALETTE), true)
       assert.strictEqual(Model.hsvToHex(0, 1, 1), "#ff0000")
       assert.strictEqual(Model.hexToHsv("#ff0000").h, 0)

@@ -26,13 +26,13 @@ Panel {
   property var calendarLegend: []
   property var next: null
   property date now: hostWidget ? hostWidget.now : new Date()
-  property bool inSettingsView: false
+  property string activeTab: "next"
 
   readonly property color contentForeground: bar ? bar.barForeground : Color.foreground
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
   function open() {
-    root.inSettingsView = false
+    root.activeTab = "next"
     reload()
     root.controller.show()
   }
@@ -46,9 +46,10 @@ Panel {
     else root.open()
   }
 
-  function toggleSettingsView() {
-    root.inSettingsView = !root.inSettingsView
+  function selectTab(tab) {
+    root.activeTab = tab
     root.reload()
+    scroll.contentY = 0
   }
 
   function persistSettings(values) {
@@ -76,12 +77,14 @@ Panel {
     root.next = root.hostWidget.nextMeeting || null
 
     var configured = !!root.hostWidget.configured
-    setupGuide.visible = !root.inSettingsView && !configured
-    heroCard.visible = !root.inSettingsView && configured && !!root.next
-    emptySchedule.visible = !root.inSettingsView && configured && root.scheduleGroups.length === 0
-    scheduleContainer.visible = !root.inSettingsView && configured && root.scheduleGroups.length > 0
-    settingsView.visible = root.inSettingsView
-    headerBar.inSettingsView = root.inSettingsView
+    var onNext = root.activeTab === "next"
+    setupGuide.visible = onNext && !configured
+    heroCard.visible = onNext && configured && !!root.next
+    emptySchedule.visible = onNext && configured && root.scheduleGroups.length === 0
+    scheduleContainer.visible = onNext && configured && root.scheduleGroups.length > 0
+    settingsView.visible = !onNext
+    settingsView.activeTab = root.activeTab
+    headerBar.activeTab = root.activeTab
     root.rebuildActionItems()
   }
 
@@ -107,7 +110,7 @@ Panel {
   property bool cursorActive: false
 
   function rebuildActionItems() {
-    root.actionItems = navModel.rebuildActionItems(heroCard.visible, root.next, root.scheduleGroups, root.inSettingsView)
+    root.actionItems = navModel.rebuildActionItems(heroCard.visible, root.next, root.scheduleGroups, root.activeTab !== "next")
     root.cursorIndex = navModel.cursorIndex
     root.cursorActive = navModel.cursorActive
   }
@@ -122,7 +125,6 @@ Panel {
     var activeItem = navModel.activeItem()
     if (!activeItem) return
     if (activeItem.kind === "refresh") root.refreshNow()
-    else if (activeItem.kind === "settings") root.toggleSettingsView()
     else if (activeItem.kind === "join") root.join(root.next)
     else if (activeItem.kind === "calendar") root.openInCalendar(root.next)
     else if (activeItem.kind === "event") {
@@ -152,7 +154,6 @@ Panel {
     if (!activeItem) return
     var target = null
     if (activeItem.kind === "refresh") target = headerBar.refreshBtn
-    else if (activeItem.kind === "settings") target = headerBar.settingsBtn
     else if (activeItem.kind === "join") target = heroCard.joinBtn
     else if (activeItem.kind === "calendar") target = heroCard.openCalendarBtn
     else {
@@ -170,7 +171,7 @@ Panel {
 
   onOpenedChanged: {
     if (opened) {
-      root.inSettingsView = false
+      root.activeTab = "next"
       root.reload()
     } else {
       root.cursorActive = false
@@ -196,24 +197,23 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: root.inSettingsView && settingsView.isEditing
-      onCloseRequested: {
-        if (root.inSettingsView) {
-          root.inSettingsView = false
-          root.reload()
-        } else {
-          root.close()
-        }
-      }
+      blocked: root.activeTab !== "next" && settingsView.isEditing
+      onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
-      onMoveRequested: function(deltaX, deltaY) { if (!root.inSettingsView && deltaY !== 0) root.moveCursor(deltaY) }
-      onActivateRequested: if (!root.inSettingsView) root.activateCursor()
+      onMoveRequested: function(deltaX, deltaY) {
+        if (root.activeTab !== "next") return
+        if (deltaY !== 0) root.moveCursor(deltaY)
+      }
+      onActivateRequested: {
+        if (root.activeTab === "next") root.activateCursor()
+      }
       onTextKey: function(key) {
         if (!root.hostWidget) return
-        if (key === root.hostWidget.keySettings) root.toggleSettingsView()
-        else if (!root.inSettingsView) {
-          if (key === root.hostWidget.keyRefresh) root.refreshNow()
-          else if (key === root.hostWidget.keyJoin && root.next && root.next.meetUrl) root.join(root.next)
+        if (key === root.hostWidget.keySettings)
+          root.selectTab(root.activeTab === "options" ? "next" : "options")
+        else if (key === root.hostWidget.keyRefresh) root.refreshNow()
+        else if (root.activeTab === "next") {
+          if (key === root.hostWidget.keyJoin && root.next && root.next.meetUrl) root.join(root.next)
           else if (key === root.hostWidget.keyCalendar && root.next) root.openInCalendar(root.next)
         }
       }
@@ -236,29 +236,18 @@ Panel {
             id: headerBar
             contentForeground: root.contentForeground
             contentFontFamily: root.contentFontFamily
-            statusText: Model.headerStatus(
-              root.fetching,
-              root.lastFetchFailed,
-              root.offlineFeedCount,
-              root.hostWidget ? root.hostWidget.lastUpdated : null,
-              root.now,
-              root.hostWidget && root.hostWidget.configured,
-              root.hostWidget ? root.hostWidget.use12Hour : false
-            )
-            isError: root.lastFetchFailed || root.offlineFeedCount > 0
             fetching: root.fetching
-            inSettingsView: root.inSettingsView
+            activeTab: root.activeTab
             cursorOnRefresh: root.cursorOn("refresh")
-            cursorOnSettings: root.cursorOn("settings")
             onRefreshRequested: root.refreshNow()
-            onSettingsRequested: root.toggleSettingsView()
+            onTabChanged: function(tab) { root.selectTab(tab) }
             onRefreshHovered: function(isHovered) { if (isHovered) root.pointCursorAt("refresh") }
-            onSettingsHovered: function(isHovered) { if (isHovered) root.pointCursorAt("settings") }
           }
 
           SettingsView {
             id: settingsView
             visible: false
+            activeTab: root.activeTab
             hostWidget: root.hostWidget
             contentForeground: root.contentForeground
             contentFontFamily: root.contentFontFamily
@@ -267,7 +256,7 @@ Panel {
               update[key] = val
               root.persistSettings(update)
             }
-            onCloseRequested: root.toggleSettingsView()
+            onCloseRequested: root.selectTab("next")
           }
 
           SetupGuide {
@@ -341,17 +330,39 @@ Panel {
           }
 
           PanelSeparator {
-            visible: !root.inSettingsView && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
+            visible: root.activeTab === "next" && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
             foreground: root.contentForeground
             strength: Tokens.separatorLegend
           }
 
           CalendarLegend {
-            visible: !root.inSettingsView && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
+            visible: root.activeTab === "next" && root.useCalendarColors && root.calendarLegend && root.calendarLegend.length > 1
             legend: root.calendarLegend
             contentForeground: root.contentForeground
             contentFontFamily: root.contentFontFamily
             useCalendarColors: root.useCalendarColors
+          }
+
+          Text {
+            id: statusFooter
+            visible: text !== ""
+            width: parent.width
+            textFormat: Text.PlainText
+            text: Model.headerStatus(
+              root.fetching,
+              root.lastFetchFailed,
+              root.offlineFeedCount,
+              root.hostWidget ? root.hostWidget.lastUpdated : null,
+              root.now,
+              root.hostWidget && root.hostWidget.configured,
+              root.hostWidget ? root.hostWidget.use12Hour : false
+            )
+            color: (root.lastFetchFailed || root.offlineFeedCount > 0)
+              ? Color.urgent
+              : Qt.darker(root.contentForeground, Tokens.dimMuted)
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+            horizontalAlignment: Text.AlignHCenter
           }
         }
       }

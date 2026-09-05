@@ -52,6 +52,10 @@ var RESPONSE_STATUS_DECLINED = "declined"
 
 var SECTION_EVENTS = "EVENTS"
 var SECTION_SETTINGS = "SETTINGS"
+var SECTION_CALENDARS = "CALENDARS"
+var SECTION_APPEARANCE = "APPEARANCE"
+var SECTION_ACTIONS = "ACTIONS"
+var SECTION_SHORTCUTS = "SHORTCUTS"
 var SECTION_TODAY = "TODAY"
 var SECTION_TOMORROW = "TOMORROW"
 var SECTION_NEXT = "NEXT"
@@ -64,6 +68,7 @@ var STATUS_OFFLINE = "offline"
 var TOOLTIP_REFRESH = "Refresh calendar"
 var TOOLTIP_SETTINGS = "Settings (,)"
 var TOOLTIP_BACK_SCHEDULE = "Back to schedule"
+var TOOLTIP_BACK_SETTINGS = "Back to settings"
 var TOOLTIP_UPDATING = "Updating calendar…"
 
 var ICON_REFRESH = ""
@@ -140,16 +145,16 @@ var VIDEO_PROVIDERS = [
 ]
 
 var CALENDAR_COLOR_PALETTE = [
-  "#4285f4",
-  "#34a853",
-  "#fbbc04",
   "#ea4335",
-  "#a142f4",
-  "#24c1e0",
   "#fa7b17",
-  "#f439a0",
+  "#fbbc04",
+  "#34a853",
+  "#00897b",
+  "#24c1e0",
+  "#4285f4",
   "#5c6bc0",
-  "#00897b"
+  "#a142f4",
+  "#f439a0"
 ]
 
 var Constants = {
@@ -194,6 +199,10 @@ var Constants = {
   RESPONSE_STATUS_DECLINED: RESPONSE_STATUS_DECLINED,
   SECTION_EVENTS: SECTION_EVENTS,
   SECTION_SETTINGS: SECTION_SETTINGS,
+  SECTION_CALENDARS: SECTION_CALENDARS,
+  SECTION_APPEARANCE: SECTION_APPEARANCE,
+  SECTION_ACTIONS: SECTION_ACTIONS,
+  SECTION_SHORTCUTS: SECTION_SHORTCUTS,
   SECTION_TODAY: SECTION_TODAY,
   SECTION_TOMORROW: SECTION_TOMORROW,
   SECTION_NEXT: SECTION_NEXT,
@@ -204,6 +213,7 @@ var Constants = {
   TOOLTIP_REFRESH: TOOLTIP_REFRESH,
   TOOLTIP_SETTINGS: TOOLTIP_SETTINGS,
   TOOLTIP_BACK_SCHEDULE: TOOLTIP_BACK_SCHEDULE,
+  TOOLTIP_BACK_SETTINGS: TOOLTIP_BACK_SETTINGS,
   TOOLTIP_UPDATING: TOOLTIP_UPDATING,
   ICON_REFRESH: ICON_REFRESH,
   ICON_SETTINGS: ICON_SETTINGS,
@@ -1434,6 +1444,43 @@ class JsonStateParser {
     var events = JsonStateParser.parseJsonEvents(jsonDocument, options)
     return { events: events, syncedAt: jsonDocument.syncedAt || null }
   }
+
+  static dateToIso(value) {
+    if (value == null || value === "") return null
+    if (typeof value === "string") return value
+    try {
+      if (typeof value.toISOString === "function") return value.toISOString()
+    } catch (_) {
+      return null
+    }
+    return null
+  }
+
+  static serializeIcsCache(events, syncedAt) {
+    var list = []
+    var source = events || []
+    for (var i = 0; i < source.length; i++) {
+      var event = source[i]
+      if (!event) continue
+      var start = JsonStateParser.dateToIso(event.start)
+      if (!start) continue
+      list.push({
+        uid: event.uid || null,
+        title: event.title || DEFAULT_EVENT_TITLE,
+        start: start,
+        end: JsonStateParser.dateToIso(event.end),
+        allDay: event.allDay === true,
+        meetUrl: event.meetUrl || null,
+        location: event.location || "",
+        calendarName: event.calendarName || "",
+        feedLabel: event.feedLabel || null,
+        calendarColor: event.calendarColor || null,
+        eventUrl: event.eventUrl || null
+      })
+    }
+    var synced = JsonStateParser.dateToIso(syncedAt) || JsonStateParser.dateToIso(new Date())
+    return JSON.stringify({ syncedAt: synced, events: list })
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1958,8 +2005,8 @@ class DisplayFormatter {
     }
     if (nowMs < end) {
       var minutesLeft = Math.max(1, Math.round((end - nowMs) / MS_PER_MINUTE))
-      if (minutesLeft <= 1) return "1 min left"
-      if (minutesLeft < MINUTES_PER_HOUR) return minutesLeft + " min left"
+      if (minutesLeft <= 1) return "1m left"
+      if (minutesLeft < MINUTES_PER_HOUR) return minutesLeft + "m left"
       var hours = Math.floor(minutesLeft / MINUTES_PER_HOUR)
       var remainingMinutes = minutesLeft % MINUTES_PER_HOUR
       return (remainingMinutes > 0 ? hours + "h " + remainingMinutes + "m" : hours + "h") + " left"
@@ -1988,9 +2035,9 @@ class DisplayFormatter {
     } else if (nowMs >= start && nowMs < end) {
       var minutesLeft = Math.max(1, Math.round((end - nowMs) / MS_PER_MINUTE))
       if (minutesLeft <= 1) {
-        suffix = " · 1 min left"
+        suffix = " · 1m left"
       } else if (minutesLeft < MINUTES_PER_HOUR) {
-        suffix = " · " + minutesLeft + " min left"
+        suffix = " · " + minutesLeft + "m left"
       } else {
         var hours = Math.floor(minutesLeft / MINUTES_PER_HOUR)
         var remainingMinutes = minutesLeft % MINUTES_PER_HOUR
@@ -2069,10 +2116,12 @@ class DisplayFormatter {
     return status ? label + " · " + status : label
   }
 
-  static barLabel(configured, nextMeeting, now, maxTitleLength, use12Hour) {
+  static barLabel(configured, nextMeeting, now, maxTitleLength, use12Hour, showCalendarIcon) {
     if (!configured || !nextMeeting) return ""
+    var text = DisplayFormatter.formatLabel(nextMeeting, now, maxTitleLength, use12Hour)
+    if (showCalendarIcon === false) return text
     var icon = nextMeeting.meetUrl ? ICON_MEETING_VIDEO + "  " : ICON_CALENDAR_EVENT + "  "
-    return icon + DisplayFormatter.formatLabel(nextMeeting, now, maxTitleLength, use12Hour)
+    return icon + text
   }
 
   static headerStatus(
@@ -2084,7 +2133,6 @@ class DisplayFormatter {
     configured,
     use12Hour
   ) {
-    if (fetching) return STATUS_UPDATING
     if (lastFetchFailed) return STATUS_OFFLINE_CACHED
     if (offlineFeedCount > 0) {
       return (
@@ -2143,14 +2191,14 @@ class PanelNavigationModel {
     this.cursorActive = false
   }
 
-  rebuildActionItems(heroVisible, nextMeeting, scheduleGroups, inSettingsView) {
-    if (inSettingsView) {
-      this.actionItems = [{ kind: ACTION_SETTINGS }]
+  rebuildActionItems(heroVisible, nextMeeting, scheduleGroups, skipAgenda) {
+    if (skipAgenda) {
+      this.actionItems = [{ kind: ACTION_REFRESH }]
       if (this.cursorIndex >= this.actionItems.length)
         this.cursorIndex = this.actionItems.length - 1
       return this.actionItems
     }
-    var items = [{ kind: ACTION_REFRESH }, { kind: ACTION_SETTINGS }]
+    var items = [{ kind: ACTION_REFRESH }]
     if (heroVisible && nextMeeting && nextMeeting.meetUrl) items.push({ kind: ACTION_JOIN })
     if (heroVisible && nextMeeting) items.push({ kind: ACTION_CALENDAR })
     if (scheduleGroups && scheduleGroups.length) {
@@ -2225,6 +2273,9 @@ function parseJsonEvents(items, options) {
 function parseJsonState(rawText, options) {
   return JsonStateParser.parseJsonState(rawText, options)
 }
+function serializeIcsCache(events, syncedAt) {
+  return JsonStateParser.serializeIcsCache(events, syncedAt)
+}
 
 function splitIcsFeeds(raw) {
   return FeedConfigParser.splitIcsFeeds(raw)
@@ -2277,8 +2328,15 @@ function timeRange(start, end, allDay, use12Hour) {
 function meetingTimeLabel(start, end, now, allDay, use12Hour) {
   return DisplayFormatter.meetingTimeLabel(start, end, now, allDay, use12Hour)
 }
-function barLabel(configured, nextMeeting, now, maxTitleLength, use12Hour) {
-  return DisplayFormatter.barLabel(configured, nextMeeting, now, maxTitleLength, use12Hour)
+function barLabel(configured, nextMeeting, now, maxTitleLength, use12Hour, showCalendarIcon) {
+  return DisplayFormatter.barLabel(
+    configured,
+    nextMeeting,
+    now,
+    maxTitleLength,
+    use12Hour,
+    showCalendarIcon
+  )
 }
 function headerStatus(
   fetching,
@@ -2368,6 +2426,7 @@ if (typeof module !== "undefined" && module.exports) {
     parseIcs: parseIcs,
     parseJsonEvents: parseJsonEvents,
     parseJsonState: parseJsonState,
+    serializeIcsCache: serializeIcsCache,
     splitIcsFeeds: splitIcsFeeds,
     dedupeEvents: dedupeEvents,
     normalizeKey: normalizeKey,
