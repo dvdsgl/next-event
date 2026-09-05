@@ -37,7 +37,7 @@ Item {
     radius: Style.cornerRadius
     color: "transparent"
     borderSpec: Border.none()
-    implicitHeight: heroCol.implicitHeight + Style.space(20)
+    implicitHeight: heroCol.implicitHeight + Style.space(8)
 
     Rectangle {
       id: heroColorStripe
@@ -117,16 +117,15 @@ Item {
         Button {
           id: joinButton
           visible: !!(root.next && root.next.meetUrl)
-          Layout.fillWidth: true
-          text: Model.LABEL_JOIN_MEETING
+          text: "Join"
           iconText: Model.ICON_MEETING_VIDEO
           selected: true
           accent: Color.accent
           fontFamily: root.contentFontFamily
-          fontSize: Style.font.bodySmall
-          iconSize: Style.font.bodySmall
-          horizontalPadding: Style.space(12)
-          verticalPadding: Style.space(7)
+          fontSize: Style.font.caption
+          iconSize: Style.font.caption
+          horizontalPadding: Style.space(8)
+          verticalPadding: Style.space(3)
           hasCursor: root.cursorOnJoin
           onHovered: function(isHovered) { root.joinHovered(isHovered) }
           onClicked: root.joinRequested()
@@ -135,16 +134,15 @@ Item {
         Button {
           id: openCalendarButton
           visible: !!root.next
-          Layout.fillWidth: true
-          text: Model.LABEL_OPEN_CALENDAR
+          text: "Calendar"
           iconText: Model.ICON_CALENDAR_EVENT
           bordered: true
           foreground: root.contentForeground
           fontFamily: root.contentFontFamily
-          fontSize: Style.font.bodySmall
-          iconSize: Style.font.bodySmall
-          horizontalPadding: Style.space(12)
-          verticalPadding: Style.space(7)
+          fontSize: Style.font.caption
+          iconSize: Style.font.caption
+          horizontalPadding: Style.space(8)
+          verticalPadding: Style.space(3)
           hasCursor: root.cursorOnCalendar
           onHovered: function(isHovered) { root.calendarHovered(isHovered) }
           onClicked: root.calendarRequested()
