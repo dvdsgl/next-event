@@ -32,7 +32,7 @@ describe("JsonStateParser", () => {
     it("filters out declined invitations", () => {
       const raw = JSON.stringify([
         { title: "Accepted Meeting", start: "2026-08-28T10:00:00Z", responseStatus: "accepted" },
-        { title: "Declined Meeting", start: "2026-08-28T11:00:00Z", responseStatus: "declined" }
+        { title: "Declined Meeting", start: "2026-08-28T11:00:00Z", responseStatus: "Declined" }
       ])
 
       const events = JsonStateParser.parseJsonEvents(raw)

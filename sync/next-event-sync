@@ -250,6 +250,8 @@ def fetch_via_gws(profile_dir=PROFILE_DIR):
         for g_ev in items:
             if g_ev.get("status") == "cancelled":
                 continue
+            if extract_response_status(g_ev).lower() == RESPONSE_STATUS_DECLINED:
+                continue
             ev = normalize_event(g_ev, cal_id, cal_name, cal_color)
             if ev is not None:
                 all_events.append(ev)

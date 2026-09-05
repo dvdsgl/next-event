@@ -115,6 +115,27 @@ describe("IcsParser", () => {
       assert.strictEqual(events.length, 4)
     })
 
+    it("skips cancelled events and declined invitations", () => {
+      const cancelled = feed(["STATUS:CANCELLED"])
+      assert.strictEqual(IcsParser.parse(cancelled, { now: NOW }).length, 0)
+
+      const declinedStatus = feed(["STATUS:DECLINED"])
+      assert.strictEqual(IcsParser.parse(declinedStatus, { now: NOW }).length, 0)
+
+      const declinedInvite = feed([
+        "TRANSP:TRANSPARENT",
+        "ATTENDEE;PARTSTAT=DECLINED;CN=David:mailto:david@example.com"
+      ])
+      assert.strictEqual(IcsParser.parse(declinedInvite, { now: NOW }).length, 0)
+
+      const accepted = feed([
+        "STATUS:CONFIRMED",
+        "TRANSP:OPAQUE",
+        "ATTENDEE;PARTSTAT=ACCEPTED;CN=David:mailto:david@example.com"
+      ])
+      assert.strictEqual(IcsParser.parse(accepted, { now: NOW }).length, 1)
+    })
+
     it("parses COLOR property and supports options.calendarColor and options.feedLabel", () => {
       const icsWithColor = feed(["COLOR:#ea4335"])
       const events1 = IcsParser.parse(icsWithColor, { now: NOW })

@@ -1135,7 +1135,11 @@ class IcsParser {
       exdates: [],
       durationMs: 0,
       startKey: 0,
-      tzInfo: null
+      tzInfo: null,
+      cancelled: false,
+      declined: false,
+      transparent: false,
+      attendeeDeclined: false
     }
     var lines = block.lines
     var lastTzid = null
@@ -1147,6 +1151,16 @@ class IcsParser {
       var propValue = prop.value
       if (propName === "UID") event.uid = propValue.trim()
       else if (propName === "SUMMARY") event.title = IcsParser.unescapeIcs(propValue)
+      else if (propName === "STATUS") {
+        var eventStatus = String(propValue || "").trim().toUpperCase()
+        if (eventStatus === "CANCELLED") event.cancelled = true
+        if (eventStatus === "DECLINED") event.declined = true
+      } else if (propName === "TRANSP") {
+        event.transparent = String(propValue || "").trim().toUpperCase() === "TRANSPARENT"
+      } else if (propName === "ATTENDEE") {
+        var partstat = String(prop.params.PARTSTAT || "").trim().toUpperCase()
+        if (partstat === "DECLINED") event.attendeeDeclined = true
+      }
       else if (propName === "RECURRENCE-ID") {
         var recurrenceParsed = DateTimeUtils.parseRfcDate(
           propValue,
@@ -1215,6 +1229,8 @@ class IcsParser {
     }
 
     if (!event.uid || !event.start) return null
+    if (event.cancelled || event.declined) return null
+    if (event.attendeeDeclined && event.transparent) return null
 
     var linkCandidate =
       (event.location || "") +
@@ -1390,7 +1406,7 @@ class JsonStateParser {
     for (var i = 0; i < rawList.length; i++) {
       var item = rawList[i]
       if (!item) continue
-      if (item.responseStatus === RESPONSE_STATUS_DECLINED) continue
+      if (String(item.responseStatus || "").toLowerCase() === RESPONSE_STATUS_DECLINED) continue
 
       var startParsed = DateTimeUtils.parseIsoDate(item.start)
       if (!startParsed) continue
