@@ -187,7 +187,7 @@ Panel {
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
-    owner: root.barIdentity
+    owner: root
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
