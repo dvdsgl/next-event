@@ -23,6 +23,7 @@ describe("Constants", () => {
       assert.strictEqual(Constants.DEFAULT_LOOKAHEAD_DAYS, 3)
       assert.strictEqual(Constants.DEFAULT_MAX_EVENTS, 80)
       assert.strictEqual(Constants.DEFAULT_MAX_ROWS, 20)
+      assert.strictEqual(Constants.FEATURED_HANDOFF_MINUTES, 10)
       assert.strictEqual(Constants.DEFAULT_MAX_MEETING_ROWS, 8)
       assert.strictEqual(Constants.DEFAULT_MAX_TITLE_LENGTH, 28)
       assert.strictEqual(Constants.MIN_MAX_TITLE_LENGTH, 8)

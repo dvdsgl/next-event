@@ -171,5 +171,30 @@ describe("ScheduleAggregator", () => {
       assert.strictEqual(state.scheduleGroups[0].items.length, 1)
       assert.strictEqual(state.scheduleGroups[0].items[0].title, "Design Review")
     })
+
+    it("keeps an ongoing meeting featured while more than 10 minutes remain", () => {
+      const duringStandup = new Date(2026, 7, 28, 10, 15, 0)
+      const state = ScheduleAggregator.computeScheduleState([todayTimed1, todayTimed2], duringStandup, {
+        lookaheadDays: 3
+      })
+      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+    })
+
+    it("features the next timed event once the current meeting has 10 minutes left", () => {
+      const wrappingUp = new Date(2026, 7, 28, 10, 20, 0)
+      const state = ScheduleAggregator.computeScheduleState([todayTimed1, todayTimed2], wrappingUp, {
+        lookaheadDays: 3
+      })
+      assert.strictEqual(state.nextMeeting.title, "Design Review")
+      assert.strictEqual(state.scheduleGroups[0].items[0].title, "Daily Standup")
+    })
+
+    it("keeps the current meeting featured when nothing timed follows", () => {
+      const wrappingUp = new Date(2026, 7, 28, 10, 20, 0)
+      const state = ScheduleAggregator.computeScheduleState([todayTimed1, todayAllDay], wrappingUp, {
+        lookaheadDays: 3
+      })
+      assert.strictEqual(state.nextMeeting.title, "Daily Standup")
+    })
   })
 })

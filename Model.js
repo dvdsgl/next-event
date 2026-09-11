@@ -25,6 +25,7 @@ var BYTES_PER_MIB = 1048576
 var DEFAULT_MAX_EVENTS = 80
 var DEFAULT_MAX_MEETING_ROWS = 8
 var DEFAULT_MAX_ROWS = 20
+var FEATURED_HANDOFF_MINUTES = 10
 var MAX_RRULE_STEPS = 20000
 var TRANSITION_YEAR_MARGIN = 1
 
@@ -177,6 +178,7 @@ var Constants = {
   DEFAULT_MAX_EVENTS: DEFAULT_MAX_EVENTS,
   DEFAULT_MAX_MEETING_ROWS: DEFAULT_MAX_MEETING_ROWS,
   DEFAULT_MAX_ROWS: DEFAULT_MAX_ROWS,
+  FEATURED_HANDOFF_MINUTES: FEATURED_HANDOFF_MINUTES,
   MAX_RRULE_STEPS: MAX_RRULE_STEPS,
   TRANSITION_YEAR_MARGIN: TRANSITION_YEAR_MARGIN,
   DEFAULT_KEY_REFRESH: DEFAULT_KEY_REFRESH,
@@ -1916,6 +1918,23 @@ class ScheduleAggregator {
     return a.start.getTime() === b.start.getTime() && a.title === b.title
   }
 
+  static pickFeaturedMeeting(meetings, now) {
+    if (!meetings || !meetings.length) return null
+    var current = meetings[0]
+    now = now || new Date()
+    if (!current || !current.start || !current.end) return current
+    if (ScheduleAggregator.isEventAllDay(current)) return current
+    var nowMs = now.getTime()
+    if (nowMs < current.start.getTime() || nowMs >= current.end.getTime()) return current
+    if (current.end.getTime() - nowMs > FEATURED_HANDOFF_MINUTES * MS_PER_MINUTE) return current
+    for (var i = 1; i < meetings.length; i++) {
+      var candidate = meetings[i]
+      if (!candidate || !candidate.start || ScheduleAggregator.isEventAllDay(candidate)) continue
+      return candidate
+    }
+    return current
+  }
+
   static omitFeaturedEvent(groups, featured) {
     if (!featured || !groups || !groups.length) return groups || []
     var result = []
@@ -1981,7 +2000,7 @@ class ScheduleAggregator {
     })
 
     var calendarLegend = ScheduleAggregator.buildCalendarLegend(events, options.feeds)
-    var nextMeeting = meetings.length > 0 ? meetings[0] : null
+    var nextMeeting = ScheduleAggregator.pickFeaturedMeeting(meetings, now)
     var listedGroups = ScheduleAggregator.omitFeaturedEvent(scheduleGroups, nextMeeting)
 
     return {
